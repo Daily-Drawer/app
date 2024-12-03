@@ -5,7 +5,7 @@ const HomeMap = () => {
   return (
     <SafeAreaView style={styles.SafeView}>
       <View>
-        <Text>홈</Text>
+        <Text>홈main</Text>
       </View>
     </SafeAreaView>
   );
