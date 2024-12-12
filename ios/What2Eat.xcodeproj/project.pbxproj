@@ -12,11 +12,8 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		234CCC2546DC81EF7BCEDBAD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
-		3B9CCC112CFDCEFB0068E2A2 /* KakaoMapsSDK-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 3B9CCC102CFDCEFB0068E2A2 /* KakaoMapsSDK-SPM */; };
-		3B9CCC132CFDCEFB0068E2A2 /* KakaoMapsSDK-SPM-Dynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 3B9CCC122CFDCEFB0068E2A2 /* KakaoMapsSDK-SPM-Dynamic */; };
-		42BD5F03C9F69A251177D499 /* Pods_What2Eat_What2EatTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0BBB39188B26E326BA726CDC /* Pods_What2Eat_What2EatTests.framework */; };
-		57CF29046D97B83C457E2400 /* Pods_What2Eat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78BEE6F0E2C2B6A1A2F21414 /* Pods_What2Eat.framework */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		A159DB31C53B31C1607A4FFA /* libPods-What2Eat.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D92FF96AEE6F24BB2264A17B /* libPods-What2Eat.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,7 +30,7 @@
 		00E356EE1AD99517003FC87E /* What2EatTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = What2EatTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		00E356F11AD99517003FC87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00E356F21AD99517003FC87E /* What2EatTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = What2EatTests.m; sourceTree = "<group>"; };
-		0BBB39188B26E326BA726CDC /* Pods_What2Eat_What2EatTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_What2Eat_What2EatTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		0E833E9751C0974C9DB94DC3 /* Pods-What2Eat.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-What2Eat.debug.xcconfig"; path = "Target Support Files/Pods-What2Eat/Pods-What2Eat.debug.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* What2Eat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = What2Eat.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = What2Eat/AppDelegate.h; sourceTree = "<group>"; };
 		13B07FB01A68108700A75B9A /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = AppDelegate.mm; path = What2Eat/AppDelegate.mm; sourceTree = "<group>"; };
@@ -41,12 +38,9 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = What2Eat/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = What2Eat/main.m; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = What2Eat/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		1FCFF55C51D38A65FE5F85F9 /* Pods-What2Eat-What2EatTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-What2Eat-What2EatTests.release.xcconfig"; path = "Target Support Files/Pods-What2Eat-What2EatTests/Pods-What2Eat-What2EatTests.release.xcconfig"; sourceTree = "<group>"; };
-		3D94BC6F818F0AC590341CE5 /* Pods-What2Eat.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-What2Eat.release.xcconfig"; path = "Target Support Files/Pods-What2Eat/Pods-What2Eat.release.xcconfig"; sourceTree = "<group>"; };
-		78BEE6F0E2C2B6A1A2F21414 /* Pods_What2Eat.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_What2Eat.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D7C260F74128E008CCF4A19 /* Pods-What2Eat.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-What2Eat.release.xcconfig"; path = "Target Support Files/Pods-What2Eat/Pods-What2Eat.release.xcconfig"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = What2Eat/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		A604E800EE9FA4D129A649AD /* Pods-What2Eat-What2EatTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-What2Eat-What2EatTests.debug.xcconfig"; path = "Target Support Files/Pods-What2Eat-What2EatTests/Pods-What2Eat-What2EatTests.debug.xcconfig"; sourceTree = "<group>"; };
-		D1C29CA433EE0D81EAEB8681 /* Pods-What2Eat.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-What2Eat.debug.xcconfig"; path = "Target Support Files/Pods-What2Eat/Pods-What2Eat.debug.xcconfig"; sourceTree = "<group>"; };
+		D92FF96AEE6F24BB2264A17B /* libPods-What2Eat.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-What2Eat.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -55,7 +49,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				42BD5F03C9F69A251177D499 /* Pods_What2Eat_What2EatTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -63,9 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3B9CCC112CFDCEFB0068E2A2 /* KakaoMapsSDK-SPM in Frameworks */,
-				3B9CCC132CFDCEFB0068E2A2 /* KakaoMapsSDK-SPM-Dynamic in Frameworks */,
-				57CF29046D97B83C457E2400 /* Pods_What2Eat.framework in Frameworks */,
+				A159DB31C53B31C1607A4FFA /* libPods-What2Eat.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -107,8 +98,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				78BEE6F0E2C2B6A1A2F21414 /* Pods_What2Eat.framework */,
-				0BBB39188B26E326BA726CDC /* Pods_What2Eat_What2EatTests.framework */,
+				D92FF96AEE6F24BB2264A17B /* libPods-What2Eat.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -147,10 +137,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				D1C29CA433EE0D81EAEB8681 /* Pods-What2Eat.debug.xcconfig */,
-				3D94BC6F818F0AC590341CE5 /* Pods-What2Eat.release.xcconfig */,
-				A604E800EE9FA4D129A649AD /* Pods-What2Eat-What2EatTests.debug.xcconfig */,
-				1FCFF55C51D38A65FE5F85F9 /* Pods-What2Eat-What2EatTests.release.xcconfig */,
+				0E833E9751C0974C9DB94DC3 /* Pods-What2Eat.debug.xcconfig */,
+				4D7C260F74128E008CCF4A19 /* Pods-What2Eat.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -162,12 +150,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 00E357021AD99517003FC87E /* Build configuration list for PBXNativeTarget "What2EatTests" */;
 			buildPhases = (
-				E4D24E3298E9124BF939DD1E /* [CP] Check Pods Manifest.lock */,
 				00E356EA1AD99517003FC87E /* Sources */,
 				00E356EB1AD99517003FC87E /* Frameworks */,
 				00E356EC1AD99517003FC87E /* Resources */,
-				D699E0A2B3E4839EADE6A01A /* [CP] Embed Pods Frameworks */,
-				6E9E7E9FC2364C948A6F44BD /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -183,23 +168,19 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "What2Eat" */;
 			buildPhases = (
-				A0D52EA8D04D916473261017 /* [CP] Check Pods Manifest.lock */,
+				B7686987D273EE9C8A0CA526 /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				D5A8A3C44BB65571EA0DC218 /* [CP] Embed Pods Frameworks */,
-				1566AA65F7C3682173D1B8CD /* [CP] Copy Pods Resources */,
+				AE5E52A05B45F7AF6B057068 /* [CP] Embed Pods Frameworks */,
+				50F58752AA5E1D30B05D5AB7 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = What2Eat;
-			packageProductDependencies = (
-				3B9CCC102CFDCEFB0068E2A2 /* KakaoMapsSDK-SPM */,
-				3B9CCC122CFDCEFB0068E2A2 /* KakaoMapsSDK-SPM-Dynamic */,
-			);
 			productName = What2Eat;
 			productReference = 13B07F961A680F5B00A75B9A /* What2Eat.app */;
 			productType = "com.apple.product-type.application";
@@ -230,9 +211,6 @@
 				Base,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
-			packageReferences = (
-				3B9CCC0F2CFDCEFB0068E2A2 /* XCRemoteSwiftPackageReference "KakaoMapsSDK-SPM" */,
-			);
 			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -280,7 +258,7 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		1566AA65F7C3682173D1B8CD /* [CP] Copy Pods Resources */ = {
+		50F58752AA5E1D30B05D5AB7 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -297,46 +275,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-What2Eat/Pods-What2Eat-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		6E9E7E9FC2364C948A6F44BD /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-What2Eat-What2EatTests/Pods-What2Eat-What2EatTests-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-What2Eat-What2EatTests/Pods-What2Eat-What2EatTests-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-What2Eat-What2EatTests/Pods-What2Eat-What2EatTests-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		A0D52EA8D04D916473261017 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-What2Eat-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		D5A8A3C44BB65571EA0DC218 /* [CP] Embed Pods Frameworks */ = {
+		AE5E52A05B45F7AF6B057068 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -353,24 +292,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-What2Eat/Pods-What2Eat-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		D699E0A2B3E4839EADE6A01A /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-What2Eat-What2EatTests/Pods-What2Eat-What2EatTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-What2Eat-What2EatTests/Pods-What2Eat-What2EatTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-What2Eat-What2EatTests/Pods-What2Eat-What2EatTests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		E4D24E3298E9124BF939DD1E /* [CP] Check Pods Manifest.lock */ = {
+		B7686987D273EE9C8A0CA526 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -385,7 +307,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-What2Eat-What2EatTests-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-What2Eat-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -425,7 +347,6 @@
 /* Begin XCBuildConfiguration section */
 		00E356F61AD99517003FC87E /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A604E800EE9FA4D129A649AD /* Pods-What2Eat-What2EatTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -452,7 +373,6 @@
 		};
 		00E356F71AD99517003FC87E /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1FCFF55C51D38A65FE5F85F9 /* Pods-What2Eat-What2EatTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COPY_PHASE_STRIP = NO;
@@ -476,26 +396,29 @@
 		};
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D1C29CA433EE0D81EAEB8681 /* Pods-What2Eat.debug.xcconfig */;
+			baseConfigurationReference = 0E833E9751C0974C9DB94DC3 /* Pods-What2Eat.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = What2Eat/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				NEW_SETTING = "";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
 				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D COCOAPODS";
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = What2Eat;
+				SWIFT_OBJC_BRIDGING_HEADER = "What2Eat/What2Eat-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -504,25 +427,28 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3D94BC6F818F0AC590341CE5 /* Pods-What2Eat.release.xcconfig */;
+			baseConfigurationReference = 4D7C260F74128E008CCF4A19 /* Pods-What2Eat.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = What2Eat/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				NEW_SETTING = "";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
 				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D COCOAPODS";
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = What2Eat;
+				SWIFT_OBJC_BRIDGING_HEADER = "What2Eat/What2Eat-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -588,7 +514,7 @@
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -672,7 +598,7 @@
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -733,30 +659,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		3B9CCC0F2CFDCEFB0068E2A2 /* XCRemoteSwiftPackageReference "KakaoMapsSDK-SPM" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/kakao-mapsSDK/KakaoMapsSDK-SPM.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.12.2;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		3B9CCC102CFDCEFB0068E2A2 /* KakaoMapsSDK-SPM */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3B9CCC0F2CFDCEFB0068E2A2 /* XCRemoteSwiftPackageReference "KakaoMapsSDK-SPM" */;
-			productName = "KakaoMapsSDK-SPM";
-		};
-		3B9CCC122CFDCEFB0068E2A2 /* KakaoMapsSDK-SPM-Dynamic */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3B9CCC0F2CFDCEFB0068E2A2 /* XCRemoteSwiftPackageReference "KakaoMapsSDK-SPM" */;
-			productName = "KakaoMapsSDK-SPM-Dynamic";
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
 }
