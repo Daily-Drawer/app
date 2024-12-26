@@ -4,6 +4,9 @@
 # api
 .env
 
+**/ios/
+**/android/
+
 # Xcode
 #
 build/

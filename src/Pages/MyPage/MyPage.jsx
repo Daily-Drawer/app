@@ -1,12 +1,18 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 const MyPage = () => {
   return (
-    <View>
+    <View style={styles.container}>
       <Text>내정보</Text>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 export default MyPage;
