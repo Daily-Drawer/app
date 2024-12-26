@@ -4,6 +4,11 @@ import {StyleSheet } from 'react-native';
 import { KAKAO_API_KEY } from '@env';
 
 const KakaoMapView = () => {
+  if (!KAKAO_API_KEY) {
+    console.error('KAKAO_API_KEY is not defined');
+    return null;
+  }
+
   const simpleHtml = `
     <!DOCTYPE html>
 <html style="height: 100%;">
@@ -80,19 +85,30 @@ const KakaoMapView = () => {
 </html>
   `;
 
+  const handleError = (syntheticEvent) => {
+    const { nativeEvent } = syntheticEvent;
+    console.warn('WebView error:', {
+      description: nativeEvent.description,
+      code: nativeEvent.code,
+      url: nativeEvent.url,
+    });
+  };
+
   return (
     <WebView
-        source={{ html: simpleHtml }}
-        style={styles.map}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        onError={(syntheticEvent) => {
-          console.warn('WebView error:', syntheticEvent.nativeEvent);
-        }}
-        onLoadEnd={() => {
-          console.log('WebView loaded');
-        }}
-      />
+      source={{ html: simpleHtml }}
+      style={styles.map}
+      javaScriptEnabled={true}
+      domStorageEnabled={true}
+      onError={handleError}
+      originWhitelist={['*']}
+      onHttpError={(syntheticEvent) => {
+        console.warn('WebView HTTP error:', syntheticEvent.nativeEvent);
+      }}
+      onLoadEnd={() => {
+        console.log('WebView loaded successfully');
+      }}
+    />
   );
 };
 
