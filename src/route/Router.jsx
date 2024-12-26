@@ -6,6 +6,8 @@ import HomeMap from '../Pages/HomeMap/HomeMap';
 import RandomFood from '../Pages/RandomFood/RandomFood';
 import Group from '../Pages/Group/Group';
 import MyPage from '../Pages/MyPage/MyPage';
+import LoginScreen from '../Pages/login/LoginScreen';
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -36,6 +38,7 @@ const Router = () => {
         headerMode: false,
         headerShown: false,
       }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="MainTab" component={MainTab} />
     </Stack.Navigator>
   );
