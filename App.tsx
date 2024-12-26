@@ -6,7 +6,10 @@ import Config from 'react-native-config';
 
 
 function App(): React.JSX.Element {
-  // SDK 초기화
+  // SDK 초기화 전에 키 존재 여부 확인
+  if (!Config.KAKAO_NATIVE_APP_KEY) {
+    console.error('KAKAO_NATIVE_APP_KEY is not defined');
+  }
   initializeKakaoSDK(Config.KAKAO_NATIVE_APP_KEY || '');
 
   return (
