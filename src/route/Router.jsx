@@ -34,6 +34,7 @@ const MainTab = () => {
 const Router = () => {
   return (
     <Stack.Navigator
+      initialRouteName="Login"
       screenOptions={{
         headerMode: false,
         headerShown: false,
