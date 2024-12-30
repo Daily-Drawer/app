@@ -1,22 +1,39 @@
-import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { SafeAreaView, StyleSheet, Text, View, Button } from 'react-native';
 import KaKaoLogin from './KaKaoLogin';
+import { isLogined } from '@react-native-kakao/user';
+import { useNavigation } from '@react-navigation/native';
+import { PERMISSIONS_TYPE, checkPermission } from '../../utils/permissions';
 
 const LoginScreen = () => {
+  const navigation = useNavigation();
+  
+  useEffect(() => {
+    checkPermission(PERMISSIONS_TYPE.NOTIFICATION);
+  }, []);
+
+  //로그인 테스트
+  const logincheck = () => {
+    if (isLogined){
+      navigation.navigate('MainTab');
+    }
+  }
+
   return (
     <SafeAreaView style={styles.SafeView}>
-    <View style={styles.container}>
-      <View style={styles.titleView}>
-        <Text style={styles.titleText}>title</Text>
-        <Text> 무작위 음식점 추천앱</Text>
+      <View style={styles.container}>
+        <View style={styles.titleView}>
+          <Text style={styles.titleText}>title</Text>
+          <Text>무작위 음식점 추천앱</Text>
+        </View>
+        <View style={styles.logoView}>
+          <Text>logo</Text>
+        </View>
+        <View style={styles.loginView}>
+          <KaKaoLogin />
+          <Button title="로그인 확인" onPress={() => logincheck()} />
+        </View>
       </View>
-      <View style={styles.logoView}>
-        <Text>logo</Text>
-      </View>
-      <View style={styles.loginView}>
-        <KaKaoLogin />
-      </View>
-    </View>
     </SafeAreaView>
   );
 };
@@ -30,17 +47,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   titleView: {
-    flex: 1,  // 각 구역을 균등하게 분할
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoView: {
-    flex: 1,  // 각 구역을 균등하게 분할
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loginView: {
-    flex: 1,  // 각 구역을 균등하게 분할
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -48,6 +65,5 @@ const styles = StyleSheet.create({
     fontSize: 54,
   },
 });
-
 
 export default LoginScreen;
