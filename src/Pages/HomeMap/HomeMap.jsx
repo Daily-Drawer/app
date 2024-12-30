@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
-import KakaoMapView from './KaKaMapView';
+import KakaoMapView from './KaKaoMapView';
+import { PERMISSIONS_TYPE, checkPermission } from '../../utils/permissions';
 
 const HomeMap = () => {
-  
+  useEffect(() => {
+    checkPermission(PERMISSIONS_TYPE.LOCATION);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
