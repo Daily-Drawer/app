@@ -1,23 +1,15 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { SafeAreaView, StyleSheet, Text, View, Button } from 'react-native';
-import KaKaoLogin from './KaKaoLogin';
-import { isLogined } from '@react-native-kakao/user';
+import KaKaoLogin from '../../components/KaKaoLogin';
 import { useNavigation } from '@react-navigation/native';
-import { PERMISSIONS_TYPE, checkPermission } from '../../utils/permissions';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  
-  useEffect(() => {
-    checkPermission(PERMISSIONS_TYPE.NOTIFICATION);
-  }, []);
 
   //로그인 테스트
   const logincheck = () => {
-    if (isLogined){
       navigation.navigate('MainTab');
-    }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.SafeView}>
