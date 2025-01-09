@@ -1,29 +1,29 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Button } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import KaKaoLogin from '../../components/KaKaoLogin';
-import { useNavigation } from '@react-navigation/native';
+import CustomLogin from '../../components/CustomLogin';
 
 const LoginScreen = () => {
-  const navigation = useNavigation();
-
-  //로그인 테스트
-  const logincheck = () => {
-      navigation.navigate('MainTab');
-  };
 
   return (
     <SafeAreaView style={styles.SafeView}>
       <View style={styles.container}>
         <View style={styles.titleView}>
-          <Text style={styles.titleText}>title</Text>
-          <Text>무작위 음식점 추천앱</Text>
-        </View>
-        <View style={styles.logoView}>
-          <Text>logo</Text>
+          <Text style={styles.titleText}>What2Eat</Text>
+          <Text>이 앱은 음식점 추천 앱인가 모임 앱인가</Text>
         </View>
         <View style={styles.loginView}>
+          <CustomLogin />
           <KaKaoLogin />
-          <Button title="로그인 확인" onPress={() => logincheck()} />
+        </View>
+        <View style={styles.accountOptionsContainer}>
+          <TouchableOpacity>
+            <Text style={styles.accountOptionText}>계정 찾기</Text>
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <TouchableOpacity>
+            <Text style={styles.accountOptionText}>비밀번호 재설정</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -43,18 +43,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   loginView: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 10,
   },
   titleText: {
     fontSize: 54,
+  },
+  accountOptionsContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  accountOptionText: {
+    color: '#666666',
+    fontSize: 14,
+  },
+  divider: {
+    borderWidth: 1,
+    height: '80%',
+    borderColor: '#CCCCCC',
   },
 });
 
