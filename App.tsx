@@ -3,6 +3,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import Router from './src/route/Router';
 import { initializeKakaoSDK } from '@react-native-kakao/core';
 import Config from 'react-native-config';
+import { navigationRef } from './src/utils/navigationRef';
 
 
 function App(): React.JSX.Element {
@@ -13,9 +14,9 @@ function App(): React.JSX.Element {
   initializeKakaoSDK(Config.KAKAO_NATIVE_APP_KEY || '');
 
   return (
-      <NavigationContainer>
-        <Router />
-      </NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
+      <Router />
+    </NavigationContainer>
   );
 }
 
