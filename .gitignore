@@ -6,7 +6,8 @@
 
 **/ios/
 **/android/
-
+src/apis/*
+src/assets/*
 # Xcode
 #
 build/
