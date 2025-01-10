@@ -2,68 +2,71 @@ import React from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { login } from '@react-native-kakao/user';
 import { useNavigation } from '@react-navigation/native';
-import { handleLoginSuccess } from '../../utils/auth';
 import api from '../apis/axios';
 import kakaologo from '../assets/loginicon/kakaologo.png';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KaKaoLogin = () => {
   const navigation = useNavigation();
 
   const handleLogin = async () => {
     try {
+      // 1. 카카오 SDK 로그인
       const result = await login();
-      console.log('카카오 로그인 결과:', result);
 
       if (result.accessToken) {
         try {
-
+          // 2. 서버 로그인 요청
           const response = await api.post(
             '/api/v1/auth/login/kakao',
-            {},  // empty body
+            null,
             {
               params: {
-                kakaoAccessToken: result.accessToken,
-              },
+                kakaoAccessToken: result.accessToken
+              }
             }
           );
 
-          console.log('서버 응답:', response.data);
+          console.log('서버 응답:', JSON.stringify(response.data, null, 2));  // 응답 구조 확인
 
-          // 307 상태 코드 체크 (회원가입 필요)
-          if (response.status === 307) {
-            Alert.alert(
-              '회원가입 필요',
-              '카카오 계정으로 회원가입을 진행해주세요.',
-              [
-                {
-                  text: '확인',
-                  onPress: () => {
-                    navigation.navigate('SignUp', {
-                      email: response.data.data.kakaoUserInfo,
-                      loginType: 'kakao',
-                      kakaoAccessToken: result.accessToken,
-                    });
-                  },
-                },
-              ]
-            );
+          // 3. 로그인 성공 처리
+          if (response.data.code === '200') {
+            // tokens 구조로 수정
+            if (!response.data.data?.tokens) {
+              throw new Error('토큰 정보가 없습니다.');
+            }
+
+            // 토큰 저장 - tokens 구조에 맞게 수정
+            const { accessToken, refreshToken } = response.data.data.tokens;
+            await AsyncStorage.setItem('accessToken', accessToken);
+            await AsyncStorage.setItem('refreshToken', refreshToken);
+            await AsyncStorage.setItem('loginType', 'kakao');
+
+            // MainTab으로 이동
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainTab' }],
+            });
             return;
           }
 
-          // 로그인 성공 처리
-          const loginSuccess = await handleLoginSuccess(response, navigation);
-          if (!loginSuccess) {
-            Alert.alert('오류', '로그인 처리 중 문제가 발생했습니다.');
+        } catch (error) {
+          console.error('서버 로그인 에러:', error);
+          console.error('에러 응답:', error.response?.data);  // 에러 응답 확인
+          
+          // 회원가입이 필요한 경우 (307)
+          if (error.response?.status === 307) {
+            navigation.navigate('SignUp', {
+              email: error.response.data.data.kakaoUserInfo.kakao_account.email,
+              loginType: 'kakao',
+              kakaoAccessToken: result.accessToken
+            });
+            return;
           }
 
-        } catch (error) {
-          console.error('서버 통신 에러 상세:');
-          console.error('- 에러 메시지:', error.response);
-
           Alert.alert(
-            '오류',
-            '로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.',
-            [{ text: '확인' }]
+            '로그인 실패',
+            '로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
           );
         }
       }
