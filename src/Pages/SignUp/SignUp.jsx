@@ -41,19 +41,18 @@ const SignUp = () => {
 
   const handleSignUp = async () => {
     try {
-      let response;
       const signUpData = {
         userEmail: formData.email,
         nickName: formData.name,
       };
       
       if (loginType === 'kakao') {
-        // 카카오 회원가입
         try {
-          response = await api.post('/api/v1/auth/signup/kakao', signUpData);
-        } catch (error) {
-          if (error.response?.status === 409) {
-            // 이미 가입된 회원인 경우 바로 로그인 시도
+          // 1. 카카오 회원가입
+          const signUpResponse = await api.post('/api/v1/auth/signup/kakao', signUpData);
+          
+          if (signUpResponse.data.code === '200') {
+            // 2. 회원가입 성공 시 자동 로그인
             const loginResponse = await api.post(
               '/api/v1/auth/login/kakao',
               null,
@@ -63,75 +62,45 @@ const SignUp = () => {
                 }
               }
             );
-            
-            if (loginResponse.data.accessToken) {
-              await AsyncStorage.setItem('accessToken', loginResponse.data.accessToken);
-              await AsyncStorage.setItem('refreshToken', loginResponse.data.refreshToken);
+
+            if (loginResponse.data.code === '200') {
+              // 3. 토큰 저장
+              const { access_token, refresh_token } = loginResponse.data.data.token;
+              await AsyncStorage.setItem('accessToken', access_token);
+              await AsyncStorage.setItem('refreshToken', refresh_token);
               await AsyncStorage.setItem('loginType', 'kakao');
-              
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'MainTab' }],
-              });
-              return;
+
+              // 4. 성공 메시지 표시 후 메인으로 이동
+              Alert.alert(
+                '환영합니다!',
+                `${formData.name}님, 회원가입이 완료되었습니다.`,
+                [
+                  {
+                    text: '확인',
+                    onPress: () => {
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'MainTab' }],
+                      });
+                    }
+                  }
+                ],
+                { cancelable: false }
+              );
             }
           }
-          throw error; // 다른 에러는 상위로 전달
+        } catch (error) {
+          console.error('회원가입/로그인 에러:', error);
+          if (error.response?.status === 409) {
+            Alert.alert('오류', '이미 가입된 회원입니다.');
+          } else {
+            Alert.alert('오류', '회원가입 중 문제가 발생했습니다.');
+          }
         }
-      } else {
-        // 일반 회원가입
-        signUpData.password = formData.password;
-        response = await api.post('/api/v1/auth/signup/local', signUpData);
-      }
-
-      if (response.data) {
-        Alert.alert(
-          '환영합니다!',
-          `${formData.name}님, 회원가입이 완료되었습니다.`,
-          [
-            {
-              text: '확인',
-              onPress: async () => {
-                try {
-                  let loginResponse;
-                  if (loginType === 'kakao') {
-                    loginResponse = await api.post(
-                      '/api/v1/auth/login/kakao',
-                      null,
-                      {
-                        params: {
-                          kakaoAccessToken: route.params.kakaoAccessToken
-                        }
-                      }
-                    );
-                  } else {
-                    loginResponse = await api.post('/api/v1/auth/login/local', {
-                      userEmail: formData.email,
-                      password: formData.password,
-                    });
-                  }
-
-                  if (loginResponse.data.accessToken) {
-                    await AsyncStorage.setItem('accessToken', loginResponse.data.accessToken);
-                    await AsyncStorage.setItem('refreshToken', loginResponse.data.refreshToken);
-                    await AsyncStorage.setItem('loginType', loginType);
-                    
-                    navigation.reset({
-                      index: 0,
-                      routes: [{ name: 'MainTab' }],
-                    });
-                  }
-                } catch (loginError) {
-                  console.error('로그인 에러:', loginError);
-                }
-              }
-            }
-          ],
-          { cancelable: false }
-        );
       }
     } catch (error) {
       console.error('회원가입 에러:', error);
+      Alert.alert('오류', '회원가입 중 문제가 발생했습니다.');
     }
   };
 
