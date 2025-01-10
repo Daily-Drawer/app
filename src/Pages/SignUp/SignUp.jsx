@@ -12,6 +12,7 @@ import {
 import { useRoute, useNavigation } from '@react-navigation/native';
 import api from '../../apis/axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { handleSignUpSuccess } from '../../utils/auth';
 
 const SignUp = () => {
   const route = useRoute();
@@ -45,52 +46,24 @@ const SignUp = () => {
         userEmail: formData.email,
         nickName: formData.name,
       };
-      
+
       if (loginType === 'kakao') {
         try {
-          // 1. 카카오 회원가입
           const signUpResponse = await api.post('/api/v1/auth/signup/kakao', signUpData);
-          
-          if (signUpResponse.data.code === '200') {
-            // 2. 회원가입 성공 시 자동 로그인
-            const loginResponse = await api.post(
-              '/api/v1/auth/login/kakao',
-              null,
-              {
-                params: {
-                  kakaoAccessToken: route.params.kakaoAccessToken
-                }
+
+          const loginResponse = await api.post(
+            '/api/v1/auth/login/kakao',
+            null,
+            {
+              params: {
+                kakaoAccessToken: route.params.kakaoAccessToken
               }
-            );
-
-            if (loginResponse.data.code === '200') {
-              // 3. 토큰 저장
-              const { access_token, refresh_token } = loginResponse.data.data.token;
-              await AsyncStorage.setItem('accessToken', access_token);
-              await AsyncStorage.setItem('refreshToken', refresh_token);
-              await AsyncStorage.setItem('loginType', 'kakao');
-
-              // 4. 성공 메시지 표시 후 메인으로 이동
-              Alert.alert(
-                '환영합니다!',
-                `${formData.name}님, 회원가입이 완료되었습니다.`,
-                [
-                  {
-                    text: '확인',
-                    onPress: () => {
-                      navigation.reset({
-                        index: 0,
-                        routes: [{ name: 'MainTab' }],
-                      });
-                    }
-                  }
-                ],
-                { cancelable: false }
-              );
             }
-          }
+          );
+
+          await handleSignUpSuccess(signUpResponse, loginResponse, navigation, formData.name);
+
         } catch (error) {
-          console.error('회원가입/로그인 에러:', error);
           if (error.response?.status === 409) {
             Alert.alert('오류', '이미 가입된 회원입니다.');
           } else {
@@ -99,7 +72,6 @@ const SignUp = () => {
         }
       }
     } catch (error) {
-      console.error('회원가입 에러:', error);
       Alert.alert('오류', '회원가입 중 문제가 발생했습니다.');
     }
   };

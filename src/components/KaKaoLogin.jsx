@@ -4,19 +4,17 @@ import { login } from '@react-native-kakao/user';
 import { useNavigation } from '@react-navigation/native';
 import api from '../apis/axios';
 import kakaologo from '../assets/loginicon/kakaologo.png';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { handleLoginSuccess } from '../utils/auth';
 
 const KaKaoLogin = () => {
   const navigation = useNavigation();
 
   const handleLogin = async () => {
     try {
-      // 1. 카카오 SDK 로그인
       const result = await login();
 
       if (result.accessToken) {
         try {
-          // 2. 서버 로그인 요청
           const response = await api.post(
             '/api/v1/auth/login/kakao',
             null,
@@ -27,34 +25,9 @@ const KaKaoLogin = () => {
             }
           );
 
-          console.log('서버 응답:', JSON.stringify(response.data, null, 2));  // 응답 구조 확인
-
-          // 3. 로그인 성공 처리
-          if (response.data.code === '200') {
-            // tokens 구조로 수정
-            if (!response.data.data?.tokens) {
-              throw new Error('토큰 정보가 없습니다.');
-            }
-
-            // 토큰 저장 - tokens 구조에 맞게 수정
-            const { accessToken, refreshToken } = response.data.data.tokens;
-            await AsyncStorage.setItem('accessToken', accessToken);
-            await AsyncStorage.setItem('refreshToken', refreshToken);
-            await AsyncStorage.setItem('loginType', 'kakao');
-
-            // MainTab으로 이동
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainTab' }],
-            });
-            return;
-          }
+          await handleLoginSuccess(response, navigation);
 
         } catch (error) {
-          console.error('서버 로그인 에러:', error);
-          console.error('에러 응답:', error.response?.data);  // 에러 응답 확인
-          
-          // 회원가입이 필요한 경우 (307)
           if (error.response?.status === 307) {
             navigation.navigate('SignUp', {
               email: error.response.data.data.kakaoUserInfo.kakao_account.email,
@@ -63,15 +36,10 @@ const KaKaoLogin = () => {
             });
             return;
           }
-
-          Alert.alert(
-            '로그인 실패',
-            '로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
-          );
+          Alert.alert('로그인 실패', '로그인 중 문제가 발생했습니다.');
         }
       }
     } catch (error) {
-      console.error('카카오 로그인 에러:', error);
       Alert.alert('오류', '카카오 로그인 중 문제가 발생했습니다.');
     }
   };
