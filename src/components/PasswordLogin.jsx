@@ -9,8 +9,8 @@ import {
   Image,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { handleLoginSuccess } from '../../utils/auth';
-import api from '../../apis/axios';
+import { handleLoginSuccess } from '../utils/auth';
+import api from '../apis/axios';
 
 const PasswordLogin = () => {
   const route = useRoute();
@@ -44,7 +44,7 @@ const PasswordLogin = () => {
           onPress={() => navigation.goBack()}
         >
           <Image
-            source={require('../../assets/icon/leftbackicon.png')}
+            source={leftbackbutton}
             style={styles.backIcon}
           />
         </TouchableOpacity>
@@ -75,6 +75,8 @@ const PasswordLogin = () => {
     </SafeAreaView>
   );
 };
+
+const leftbackbutton = require('../assets/icon/leftbackicon.png');
 
 const styles = StyleSheet.create({
   container: {
