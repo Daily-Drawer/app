@@ -31,7 +31,7 @@ const CustomBottomTab = ({state, navigation, insets, descriptors}) => {
 
           const iconFlag = bool => {
             switch (label) {
-              case '근처 맛집':
+              case '지도':
                 return bool ? map_on : map_off;
               case '다이어리':
                 return bool ? diray_on : diray_off;
@@ -92,15 +92,15 @@ const CustomBottomTab = ({state, navigation, insets, descriptors}) => {
   );
 };
 
-const map_on = require('../assets/bottomtaps/map_on.png');
-const map_off = require('../assets/bottomtaps/map.png');
-const users_on = require('../assets/bottomtaps/users_on.png');
-const users_off = require('../assets/bottomtaps/users.png');
-const user_on = require('../assets/bottomtaps/user_on.png');
-const user_off = require('../assets/bottomtaps/user.png');
+const map_on = require('../assets/bottomtaps/icon_04_on.png');
+const map_off = require('../assets/bottomtaps/icon_04_off.png');
+const users_on = require('../assets/bottomtaps/icon_02_on.png');
+const users_off = require('../assets/bottomtaps/icon_02_off.png');
+const user_on = require('../assets/bottomtaps/icon_01_on.png');
+const user_off = require('../assets/bottomtaps/icon_01_off.png');
 const some = require('../assets/bottomtaps/some.png');
-const diray_off = require('../assets/bottomtaps/diary_off.png');
-const diray_on = require('../assets/bottomtaps/diary_on.png');
+const diray_off = require('../assets/bottomtaps/icon_03_off.png');
+const diray_on = require('../assets/bottomtaps/icon_03_on.png');
 
 const styles = StyleSheet.create({
   safeArea: {
