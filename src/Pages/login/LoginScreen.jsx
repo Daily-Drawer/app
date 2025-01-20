@@ -1,23 +1,28 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import KaKaoLogin from '../../components/KaKaoLogin';
 import CustomLogin from '../../components/CustomLogin';
 
+import { useNavigation } from '@react-navigation/native';
+
+
 const LoginScreen = () => {
+
+  const navigation = useNavigation();
 
   return (
     <SafeAreaView style={styles.SafeView}>
       <View style={styles.container}>
         <View style={styles.titleView}>
-          <Text style={styles.titleText}>What2Eat</Text>
-          <Text>이 앱은 음식점 추천 앱인가 모임 앱인가</Text>
+          <Image source={logoIcon} />
+          <Text style={styles.titleText}>하루서랍</Text>
         </View>
         <View style={styles.loginView}>
           <CustomLogin />
           <KaKaoLogin />
         </View>
         <View style={styles.accountOptionsContainer}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('MainTab')}>
             <Text style={styles.accountOptionText}>계정 찾기</Text>
           </TouchableOpacity>
           <View style={styles.divider} />
@@ -30,6 +35,8 @@ const LoginScreen = () => {
   );
 };
 
+const logoIcon = require('../../assets/loginicon/logo.png');
+
 const styles = StyleSheet.create({
   SafeView: {
     flex: 1,
@@ -40,6 +47,7 @@ const styles = StyleSheet.create({
   },
   titleView: {
     flex: 1,
+    gap: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -50,7 +58,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   titleText: {
-    fontSize: 54,
+    fontSize: 42,
+    fontWeight: '500',
   },
   accountOptionsContainer: {
     flexDirection: 'row',
