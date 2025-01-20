@@ -20,26 +20,23 @@ const KaKaoLogin = () => {
             null,
             {
               params: {
-                kakaoAccessToken: result.accessToken
-              }
+                kakaoAccessToken: result.accessToken,
+              },
             }
           );
 
-          await handleLoginSuccess(response, navigation);
+          const loginResult = await handleLoginSuccess(response, navigation, 'kakao');
 
-        } catch (error) {
-          if (error.response?.status === 307) {
-            navigation.navigate('SignUp', {
-              email: error.response.data.data.kakaoUserInfo.kakao_account.email,
-              loginType: 'kakao',
-              kakaoAccessToken: result.accessToken
-            });
+          if (!loginResult) {
             return;
           }
+
+        } catch (error) {
           Alert.alert('로그인 실패', '로그인 중 문제가 발생했습니다.');
         }
       }
     } catch (error) {
+      console.error('카카오 로그인 에러:', error);
       Alert.alert('오류', '카카오 로그인 중 문제가 발생했습니다.');
     }
   };
