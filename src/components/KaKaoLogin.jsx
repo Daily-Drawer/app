@@ -42,7 +42,7 @@ const KaKaoLogin = () => {
   };
 
   return (
-    <View>
+    <View style={styles.container}>
       <TouchableOpacity style={styles.kakaoButton} onPress={handleLogin}>
         <Image
           source={kakaologo}
@@ -55,8 +55,12 @@ const KaKaoLogin = () => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    width: '100%',
+  },
   kakaoButton: {
-    backgroundColor: '#FEE500', // 카카오 브랜드 색상
+    backgroundColor: '#FEE500',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -65,17 +69,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     width: '100%',
     maxWidth: 300,
+    position: 'relative',
   },
   logo: {
-    width: 18,
-    height: 18,
-    marginLeft: 14,
+    width: 22,
+    height: 22,
+    position: 'absolute',
+    left: 14,
   },
   buttonText: {
-    color: '#000000',  // 카카오 권장 텍스트 색상
+    color: '#000000',
     fontSize: 16,
-    paddingHorizontal: 86,
     fontWeight: '400',
+    textAlign: 'center',
   },
 });
 
