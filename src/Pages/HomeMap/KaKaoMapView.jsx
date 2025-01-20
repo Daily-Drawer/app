@@ -1,427 +1,691 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import WebView from 'react-native-webview';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Image, View, SafeAreaView } from 'react-native';
 import { KAKAO_API_KEY } from '@env';
-import kakaoInstance from '../../apis/kakaoInstance';
+import useDiaryStore from '../../store/diaryStore';
+import { useNavigation } from '@react-navigation/native';
 
-const KaKaoMapView = ({ userLocation }) => {
-    /* TODO: 실제 디바이스 테스트 시 구현 필요
-   * 1. 위치 관련 state 추가
-   *    - currentLocation
-   *    - lastSearchLocation
-   *
-   * 2. 현재 위치 기반 검색 기능 구현
-   *    - 지도 중심 좌표 가져오기
-   *    - 해당 위치 기준으로 주변 맛집 검색
-   *
-   * 3. 위치 기반 캐시 처리
-   *    - 이전 검색 위치와 현재 위치 비교
-   *    - 일정 거리 이내일 경우 캐시 사용
-   *    - 거리가 멀 경우 새로 검색
-   *
-   * 4. 에러 처리
-   *    - 위치 정보 획득 실패
-   *    - API 호출 실패
-   */
-  const [restaurants, setRestaurants] = useState([]);
-  const [lastSearchTime, setLastSearchTime] = useState(null);
+const KaKaoMapView = () => {
   const webViewRef = useRef();
-  const CACHE_DURATION = 30 * 60 * 1000; // 30분
+  const navigation = useNavigation();
+  const { diaries, fetchDiaries } = useDiaryStore();
+  
+  // 마커 이미지 URI 가져오기
+  const goodMarkerUri = Image.resolveAssetSource(require('../../assets/icon/pin_01.png')).uri;
+  const sosoMarkerUri = Image.resolveAssetSource(require('../../assets/icon/pin_02.png')).uri;
+  const badMarkerUri = Image.resolveAssetSource(require('../../assets/icon/pin_03.png')).uri;
+  const starMarkerUri = Image.resolveAssetSource(require('../../assets/icon/pin_04.png')).uri;
+
+  // 아이콘 이미지 URI 가져오기
+  const closeIconUri = Image.resolveAssetSource(require('../../assets/icon/closeicon.png')).uri;
+  const menuIconUri = Image.resolveAssetSource(require('../../assets/icon/menuicon.png')).uri;
 
   useEffect(() => {
-    if (userLocation && webViewRef.current) {
-      // 사용자 위치로 지도 이동
-      webViewRef.current.injectJavaScript(`
-        if (map) {
-          const userPosition = new kakao.maps.LatLng(${userLocation.latitude}, ${userLocation.longitude});
-          map.setCenter(userPosition);
-        }
-        true;
-      `);
-    }
-  }, [userLocation]);
-
-  const searchRestaurants = async () => {
-    try {
-      const now = new Date().getTime();
-
-      // 캐시된 결과가 있고 30분이 지나지 않았다면 재사용
-      if (restaurants.length > 0 && lastSearchTime && (now - lastSearchTime < CACHE_DURATION)) {
-        const randomRestaurant = restaurants[Math.floor(Math.random() * restaurants.length)];
-        webViewRef.current.injectJavaScript(`
-          updateMap(${JSON.stringify(randomRestaurant)});
-          updateRestaurantList(${JSON.stringify(restaurants)});
-          true;
-        `);
-        return;
-      }
-
-      // 새로운 API 호출
-      const response = await kakaoInstance.get('/v2/local/search/category.json', {
-        params: {
-          category_group_code: 'FD6',
-          x: '126.8099698',
-          y: '37.3342046',
-          radius: 5000,
-          size: 15
-        }
-      });
-
-      // 검색 결과에 이미지 URL 추가
-      const placesWithImages = await Promise.all(
-        response.data.documents.map(async (place) => {
-          try {
-            // 장소 상세 검색 API로 이미지 URL 가져오기
-            const detailResponse = await kakaoInstance.get('/v2/local/search/keyword.json', {
-              params: {
-                query: place.place_name,
-                x: place.x,
-                y: place.y,
-                radius: 1
-              }
-            });
-
-            // 카카오 Place API가 제공하는 기본 이미지가 없어서
-            // 임시로 기본 이미지 사용
-            return {
-              ...place,
-              image_url: 'https://via.placeholder.com/150' // 기본 이미지
-            };
-          } catch (error) {
-            console.error('이미지 검색 실패:', error);
-            return place;
-          }
-        })
-      );
-
-      setRestaurants(placesWithImages);
-      setLastSearchTime(now);
-
-      const randomRestaurant = placesWithImages[Math.floor(Math.random() * placesWithImages.length)];
-      webViewRef.current.injectJavaScript(`
-        updateMap(${JSON.stringify(randomRestaurant)});
-        updateRestaurantList(${JSON.stringify(placesWithImages)});
-        true;
-      `);
-    } catch (error) {
-      console.error('음식점 검색 실패:', error);
-    }
-  };
+    fetchDiaries();
+  }, []);
 
   const simpleHtml = `
     <!DOCTYPE html>
     <html>
     <head>
-      <meta charset="utf-8"/>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Kakao 지도</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; }
-        #map { width: 100%; height: 100%; }
-        #searchButton {
-          position: absolute;
-          bottom: 40px;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 10;
-          background-color: white;
-          padding: 12px 20px;
-          border-radius: 25px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-          cursor: pointer;
-          /* TODO: 이미지 추가
-          background-image: url('path_to_random_icon.png');
-          background-repeat: no-repeat;
-          background-position: 10px center;
-          background-size: 20px 20px;
-          padding-left: 40px; // 이미지 공간 확보
-          */
-        }
-        #listToggle {
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          z-index: 11;
-          background-color: white;
-          padding: 10px;
-          border-radius: 5px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-          cursor: pointer;
-          /* TODO: 이미지 추가
-          background-image: url('path_to_list_icon.png');
-          background-repeat: no-repeat;
-          background-position: center;
-          background-size: 24px 24px;
-          width: 44px;
-          height: 44px;
-          */
-        }
-        #restaurantList {
-          position: absolute;
-          top: 60px;
-          left: 10px;
-          z-index: 10;
-          background-color: white;
-          padding: 15px;
-          border-radius: 8px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-          max-height: 70vh;
-          width: 300px;
-          overflow-y: auto;
-          display: none;
-        }
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(0, 0, 0, 0.3);
-          display: none;
-          z-index: 9;
-        }
-        #restaurantInfo {
-          position: absolute;
-          top: 70px;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 10;
-          background-color: white;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-          display: none;
-          width: 90%;
-          max-width: 400px;
-        }
-        .info-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 12px;
-        }
-        .close-button {
-          cursor: pointer;
-          padding: 5px 10px;
-        }
-        .restaurant-item {
-          padding: 12px 8px;
-          border-bottom: 1px solid #eee;
-          cursor: pointer;
-        }
-        .restaurant-item:hover {
-          background-color: #f5f5f5;
-        }
-        .restaurant-name {
-          font-weight: bold;
-          margin-bottom: 4px;
-        }
-        .restaurant-address {
-          font-size: 0.9em;
-          color: #666;
-        }
-        .restaurant-image {
-          width: 100%;
-          height: 150px;
-          object-fit: cover;
-          border-radius: 4px;
-          margin-bottom: 12px;
-        }
-        .category-tag {
-          display: inline-block;
-          background-color: #f3f3f3;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 14px;
-          color: #666;
-          margin-bottom: 8px;
-        }
-        .category-tag.small {
-          font-size: 12px;
-          padding: 2px 6px;
-          margin: 4px 0;
-        }
-        .restaurant-info-content {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-      </style>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            html, body {
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background-color: transparent;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
+
+            #map {
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
+
+            #diary-list {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 80%;
+                height: 100vh;
+                background: white;
+                border-top-right-radius: 12px;
+                border-bottom-right-radius: 12px;
+                box-shadow: 2px 0 6px rgba(0,0,0,0.1);
+                z-index: 9999;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-out;
+                display: flex;
+                flex-direction: column;
+            }
+
+            #diary-list.show {
+                transform: translateX(0);
+            }
+
+            .list-header {
+                padding: 20px;
+                border-bottom: 1px solid #eee;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .list-content {
+                flex: 1;
+                overflow-y: auto;
+                padding-bottom: 60px;
+            }
+
+            .empty-list {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                color: #666;
+                font-size: 16px;
+                padding: 20px;
+            }
+
+            /* 목록 헤더 스타일 */
+            .list-header {
+                padding: 20px;
+                border-bottom: 1px solid #eee;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .list-title {
+                font-size: 18px;
+                font-weight: bold;
+            }
+
+            .close-button {
+                width: 24px;
+                height: 24px;
+                border: none;
+                background: none;
+                cursor: pointer;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .close-button img {
+                width: 100%;
+                height: 100%;
+            }
+
+            /* 목록 내용 컨테이너 */
+            .list-content {
+                flex: 1;
+                overflow-y: auto;
+                padding-bottom: 60px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #diary-list.show {
+                transform: translateX(0);
+            }
+            
+            .diary-item {
+                padding: 15px;
+                border-bottom: 1px solid #eee;
+                cursor: pointer;
+            }
+            
+            .diary-item:last-child {
+                border-bottom: none;
+            }
+            
+            .diary-item:hover {
+                background: #f8f8f8;
+            }
+            
+            .diary-title {
+                font-weight: bold;
+                margin-bottom: 4px;
+                font-size: 14px;
+            }
+            
+            .diary-info {
+                color: #666;
+                font-size: 12px;
+            }
+
+            /* 현재 위치 버튼 스타일 */
+            #current-location {
+                position: absolute;
+                bottom: 60px; /* 40px 아래로 조정 */
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                background: white;
+                border-radius: 50%;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 1000;
+            }
+            
+            #current-location img {
+                width: 24px;
+                height: 24px;
+            }
+
+            /* 기존 모달 스타일 */
+            #modal {
+                position: fixed;
+                bottom: 100px;
+                left: 0;
+                right: 0;
+                background: white;
+                padding: 20px;
+                border-radius: 15px;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                margin: 0 10px;
+                transform: translateY(200%);
+                transition: transform 0.3s ease-out;
+                display: flex;
+                gap: 20px;
+                z-index: 1000;
+            }
+            #modal.show {
+                transform: translateY(0);
+            }
+            .modal-content {
+                flex: 1;
+            }
+            .modal-title {
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+            .modal-info {
+                color: #666;
+                font-size: 14px;
+                margin-bottom: 5px;
+            }
+            .modal-image {
+                width: 120px;
+                height: 120px;
+                object-fit: cover;
+                border-radius: 8px;
+            }
+            .no-image {
+                width: 120px;
+                height: 120px;
+                background: #f0f0f0;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #666;
+                font-size: 12px;
+                text-align: center;
+            }
+            .detail-button {
+                background: #007AFF;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 8px;
+                margin-top: 10px;
+                cursor: pointer;
+            }
+
+            /* 목록 컨테이너 스타일 수정 */
+            #diary-list {
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                width: 50%; /* 버튼과 같은 너비로 시작 */
+                background: white;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                overflow: hidden; /* 초기에는 내용 숨김 */
+                z-index: 1000;
+                transition: all 0.3s ease-out;
+                visibility: hidden;
+                opacity: 0;
+            }
+
+            #diary-list.show {
+                width: 50%; /* 펼쳐졌을 때 너비 */
+                visibility: visible;
+                opacity: 1;
+                overflow-y: auto; /* 펼쳐졌을 때 스크롤 가능 */
+            }
+
+            .diary-item {
+                padding: 12px;
+                border-bottom: 1px solid #eee;
+                cursor: pointer;
+                text-align: left;
+                white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+            }
+            
+            /* 목록 토글 버튼 스타일 수정 */
+            #list-toggle {
+                position: absolute;
+                bottom: 110px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                background: white;
+                border-radius: 50%;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 1000;
+            }
+
+            #list-toggle img {
+                width: 24px;
+                height: 24px;
+            }
+
+            /* 메뉴 아이콘 스타일 추가 */
+            .list-icon {
+                width: 24px;
+                height: 24px;
+                stroke: #666;
+            }
+
+            .list-icon path {
+                stroke: currentColor;
+            }
+
+            /* 현재 위치 버튼 */
+            #current-location {
+                position: absolute;
+                bottom: 60px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                background: white;
+                border-radius: 50%;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 1000;
+            }
+            
+            #current-location img {
+                width: 24px;
+                height: 24px;
+            }
+
+            /* 기존 모달 스타일 */
+            #modal {
+                position: fixed;
+                bottom: 40px;
+                left: 0;
+                right: 0;
+                background: white;
+                padding: 20px;
+                border-radius: 15px;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                margin: 0 10px;
+                transform: translateY(200%);
+                transition: transform 0.3s ease-out;
+                display: flex;
+                gap: 20px;
+                z-index: 1000;
+            }
+            #modal.show {
+                transform: translateY(0);
+            }
+            .modal-content {
+                flex: 1;
+            }
+            .modal-title {
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+            .modal-info {
+                color: #666;
+                font-size: 14px;
+                margin-bottom: 5px;
+            }
+            .modal-image {
+                width: 120px;
+                height: 120px;
+                object-fit: cover;
+                border-radius: 8px;
+            }
+            .no-image {
+                width: 120px;
+                height: 120px;
+                background: #f0f0f0;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #666;
+                font-size: 12px;
+                text-align: center;
+            }
+            .detail-button {
+                background: #007AFF;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 8px;
+                margin-top: 10px;
+                cursor: pointer;
+            }
+
+            /* 목록 내용이 하단 네비게이션 바 뒤로 가려지지 않도록 패딩 추가 */
+            .list-content {
+                flex: 1;
+                padding-bottom: 60px; /* 하단 네비게이션 바 높이만큼 패딩 추가 */
+            }
+        </style>
     </head>
     <body>
-      <div id="map" onclick="handleMapClick()"></div>
-      <div id="listToggle" onclick="toggleList()">목록 보기</div>
-      <div id="searchButton" onclick="window.ReactNativeWebView.postMessage('search')">맛집 추천 받기</div>
-      <div id="restaurantList" onclick="event.stopPropagation()"></div>
-      <div class="modal-overlay" onclick="closeInfo()"></div>
-      <div id="restaurantInfo" onclick="event.stopPropagation()"></div>
-      <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_API_KEY}"></script>
-      <script>
-        let map;
-        let marker;
-        let infowindow;
-        let restaurants = [];
-        let isListVisible = true;
-
-        function initMap() {
-          const container = document.getElementById('map');
-          const options = {
-            center: new kakao.maps.LatLng(37.3342046, 126.8099698),
-            level: 3
-          };
-          map = new kakao.maps.Map(container, options);
-        }
-
-        function handleMapClick() {
-          // 목록이 열려있다면 닫기
-          if (isListVisible) {
-            const listDiv = document.getElementById('restaurantList');
-            const toggleBtn = document.getElementById('listToggle');
-            isListVisible = false;
-            listDiv.style.display = 'none';
-            toggleBtn.innerHTML = '목록 보기';
-          }
-        }
-
-        function toggleList() {
-          const listDiv = document.getElementById('restaurantList');
-          const toggleBtn = document.getElementById('listToggle');
-          const infoDiv = document.getElementById('restaurantInfo');
-          
-          isListVisible = !isListVisible;
-          
-          // 목록 토글 시 정보창 닫기
-          if (isListVisible) {
-            infoDiv.style.display = 'none';
-            document.querySelector('.modal-overlay').style.display = 'none';
-          }
-          
-          listDiv.style.display = isListVisible ? 'block' : 'none';
-          toggleBtn.innerHTML = isListVisible ? '목록 닫기' : '목록 보기';
-        }
-
-        function showRestaurantInfo(restaurant) {
-          const infoDiv = document.getElementById('restaurantInfo');
-          const overlay = document.querySelector('.modal-overlay');
-          const category = restaurant.category_name
-            .split(' > ')
-            .filter(cat => cat !== '음식점')
-            .join(' > ');
-
-          infoDiv.innerHTML = \`
-            <div class="info-header">
-              <h3>\${restaurant.place_name}</h3>
-              <span class="close-button" onclick="closeInfo()">X</span>
+        <div id="map"></div>
+        <div id="diary-list">
+            <div class="list-header">
+                <div></div>
+                <div class="list-title">목록</div>
+                <button class="close-button">
+                    <img src="${closeIconUri}" alt="닫기" />
+                </button>
             </div>
-            <img 
-              src="\${restaurant.image_url}" 
-              alt="\${restaurant.place_name}"
-              class="restaurant-image"
-              onerror="this.src='https://via.placeholder.com/150'"
-            />
-            <div class="category-tag">\${category}</div>
-            <p style="margin-bottom: 8px">\${restaurant.address_name}</p>
-            <p>\${restaurant.phone || '전화번호 없음'}</p>
-          \`;
-          infoDiv.style.display = 'block';
-          overlay.style.display = 'block';
-          
-          // 정보창이 열릴 때 목록 닫기
-          const listDiv = document.getElementById('restaurantList');
-          const toggleBtn = document.getElementById('listToggle');
-          isListVisible = false;
-          listDiv.style.display = 'none';
-          toggleBtn.innerHTML = '목록 보기';
-        }
+            <div class="list-content">
+                <!-- 여기에 다이어리 목록이 렌더링됨 -->
+            </div>
+        </div>
+        <div id="list-toggle">
+            <img src="${menuIconUri}" alt="메뉴" />
+        </div>
+        <div id="current-location">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTEyIDhjLTIuMjEgMC00IDEuNzktNCA0czEuNzkgNCA0IDQgNC0xLjc5IDQtNC0xLjc5LTQtNC00em04Ljk0IDNjLS40Ni00LjE3LTMuNzctNy40OC03Ljk0LTcuOTRWMWgtMnYyLjA2QzYuODMgMy41MiAzLjUyIDYuODMgMy4wNiAxMUgxdjJoMi4wNmMuNDYgNC4xNyAzLjc3IDcuNDggNy45NCA3Ljk0VjIzaDJ2LTIuMDZjNC4xNy0uNDYgNy40OC0zLjc3IDcuOTQtNy45NEgyM3YtMmgtMi4wNnpNMTIgMTljLTMuODcgMC03LTMuMTMtNy03czMuMTMtNyA3LTcgNyAzLjEzIDcgNy0zLjEzIDctNyA3eiIvPjwvc3ZnPg==" alt="현재 위치"/>
+        </div>
+        <div id="modal">
+            <div class="modal-content">
+                <div class="modal-title"></div>
+                <div class="modal-info"></div>
+                <button class="detail-button" onclick="openDetail()">상세보기</button>
+            </div>
+            <div class="modal-image-container"></div>
+        </div>
+        <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_API_KEY}"></script>
+        <script>
+            // 디버깅용 console.log 대체 함수
+            function log(message) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'log',
+                    message: message
+                }));
+            }
 
-        function closeInfo() {
-          document.getElementById('restaurantInfo').style.display = 'none';
-          document.querySelector('.modal-overlay').style.display = 'none';
-        }
+            var map;
+            var markers = [];
+            var selectedDiary = null;
+            var isListVisible = false;
 
-        function updateMap(restaurant) {
-          if (marker) marker.setMap(null);
+            function getMarkerImage(markerNumber) {
+                var imageSize;
+                var markerUri;
+                
+                switch(markerNumber) {
+                    case 1: 
+                        imageSize = new kakao.maps.Size(34, 34);
+                        markerUri = '${goodMarkerUri}'; 
+                        break;
+                    case 2: 
+                        imageSize = new kakao.maps.Size(34, 34);
+                        markerUri = '${sosoMarkerUri}'; 
+                        break;
+                    case 3: 
+                        imageSize = new kakao.maps.Size(34, 34);
+                        markerUri = '${badMarkerUri}'; 
+                        break;
+                    case 4: 
+                        imageSize = new kakao.maps.Size(26, 26); // star 마커만 크기 다르게 설정
+                        markerUri = '${starMarkerUri}'; 
+                        break;
+                    default: 
+                        imageSize = new kakao.maps.Size(34, 34);
+                        markerUri = '${sosoMarkerUri}';
+                }
+                
+                return new kakao.maps.MarkerImage(markerUri, imageSize);
+            }
 
-          const position = new kakao.maps.LatLng(restaurant.y, restaurant.x);
-          marker = new kakao.maps.Marker({
-            position: position,
-            map: map
-          });
+            function showModal(diary) {
+                log('showModal called with diary: ' + JSON.stringify(diary));
+                selectedDiary = diary;
+                const modal = document.getElementById('modal');
+                const title = modal.querySelector('.modal-title');
+                const info = modal.querySelector('.modal-info');
+                const imageContainer = modal.querySelector('.modal-image-container');
 
-          // 마커 클릭 이벤트
-          kakao.maps.event.addListener(marker, 'click', function() {
-            showRestaurantInfo(restaurant);
-          });
+                title.textContent = diary.title;
+                info.innerHTML = diary.placeName + '<br/>' + new Date(diary.visitDate).toLocaleDateString();
 
-          map.setCenter(position);
-          // 자동으로 정보창 표시하지 않음
-          
-          // 목록 토글 버튼 표시
-          document.getElementById('listToggle').style.display = 'block';
-        }
+                imageContainer.innerHTML = '';
+                
+                if (diary.uploadImgList && diary.uploadImgList.length > 0) {
+                    const img = document.createElement('img');
+                    img.src = diary.uploadImgList[0];
+                    img.className = 'modal-image';
+                    imageContainer.appendChild(img);
+                } else {
+                    const noImage = document.createElement('div');
+                    noImage.className = 'no-image';
+                    noImage.textContent = '등록된 사진이 없습니다';
+                    imageContainer.appendChild(noImage);
+                }
 
-        function updateRestaurantList(restaurants) {
-          const listDiv = document.getElementById('restaurantList');
-          listDiv.innerHTML = '<h3 style="margin-bottom: 12px; text-align: center;">주변 맛집 목록</h3>';
-          
-          if (!restaurants || restaurants.length === 0) {
-            const emptyMessage = document.createElement('div');
-            emptyMessage.style.textAlign = 'center';
-            emptyMessage.style.padding = '20px';
-            emptyMessage.style.color = '#666';
-            emptyMessage.innerHTML = '추천 목록이 비어있습니다';
-            listDiv.appendChild(emptyMessage);
-            return;
-          }
-          
-          restaurants.forEach((rest) => {
-            const div = document.createElement('div');
-            div.className = 'restaurant-item';
-            div.innerHTML = \`
-              <div class="restaurant-name">\${rest.place_name}</div>
-              <div class="restaurant-address">\${rest.address_name}</div>
-            \`;
-            div.onclick = () => {
-              updateMap(rest);
-              // 목록 닫기
-              isListVisible = false;
-              listDiv.style.display = 'none';
-              document.getElementById('listToggle').innerHTML = '목록 보기';
+                modal.classList.add('show');
+                log('Modal should be visible now');
+            }
+
+            function openDetail() {
+                if (selectedDiary) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'openDetail',
+                        diary: selectedDiary
+                    }));
+                }
+            }
+
+            function toggleList(e) {
+                e.stopPropagation();  // 이벤트 전파 중지
+                const listContainer = document.getElementById('diary-list');
+                const isListVisible = listContainer.classList.contains('show');
+                
+                if (!isListVisible) {
+                    listContainer.classList.add('show');
+                } else {
+                    listContainer.classList.remove('show');
+                }
+                
+                console.log('List visibility:', !isListVisible);
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'log',
+                    message: 'List toggled: ' + !isListVisible
+                }));
+            }
+
+            // 다이어리 목록 렌더링
+            function renderDiaryList() {
+                const listContent = document.querySelector('.list-content');
+                listContent.innerHTML = '';
+
+                if (!${JSON.stringify(diaries)} || ${JSON.stringify(diaries)}.length === 0) {
+                    listContent.innerHTML = \`
+                        <div class="empty-list">
+                            등록된 다이어리가 없습니다.
+                        </div>
+                    \`;
+                    return;
+                }
+
+                ${JSON.stringify(diaries)}.forEach(function(diary) {
+                    const item = document.createElement('div');
+                    item.className = 'diary-item';
+                    item.innerHTML = \`
+                        <div class="diary-title">\${diary.title}</div>
+                        <div class="diary-info">\${diary.placeName}</div>
+                        <div class="diary-info">\${new Date(diary.visitDate).toLocaleDateString()}</div>
+                    \`;
+                    item.onclick = function() {
+                        map.setCenter(new kakao.maps.LatLng(diary.latitude, diary.longitude));
+                        map.setLevel(3);
+                        toggleList();
+                    };
+                    listContent.appendChild(item);
+                });
+            }
+
+            // 현재 위치로 이동
+            function moveToCurrentLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const currentPos = new kakao.maps.LatLng(lat, lng);
+                        map.setCenter(currentPos);
+                        map.setLevel(7);
+                    });
+                }
+            }
+
+            function initMap() {
+                log('initMap called');
+                var container = document.getElementById('map');
+                var options = {
+                    center: new kakao.maps.LatLng(37.5665, 126.9780),
+                    level: 5
+                };
+                map = new kakao.maps.Map(container, options);
+
+                if (${JSON.stringify(diaries?.length)} > 0) {
+                    log('Creating markers for diaries: ' + ${JSON.stringify(diaries)});
+                    ${JSON.stringify(diaries)}.forEach(function(diary) {
+                        var markerImage = getMarkerImage(diary.markerNumber);
+                        var marker = new kakao.maps.Marker({
+                            map: map,
+                            position: new kakao.maps.LatLng(diary.latitude, diary.longitude),
+                            image: markerImage
+                        });
+
+                        kakao.maps.event.addListener(marker, 'click', function() {
+                            log('Marker clicked for diary: ' + JSON.stringify(diary));
+                            showModal(diary);
+                        });
+
+                        markers.push(marker);
+                    });
+
+                    var firstDiary = ${JSON.stringify(diaries[0])};
+                    map.setCenter(new kakao.maps.LatLng(firstDiary.latitude, firstDiary.longitude));
+                    map.setLevel(7);
+                }
+
+                // 현재 위치 버튼 이벤트
+                document.getElementById('current-location').onclick = moveToCurrentLocation;
+
+                // 다이어리 목록 렌더링
+                renderDiaryList();
+
+                // 지도 클릭 시 목록 닫기
+                kakao.maps.event.addListener(map, 'click', function() {
+                    if (isListVisible) {
+                        toggleList();
+                    }
+                    document.getElementById('modal').classList.remove('show');
+                });
+            }
+
+            // 초기화 시 이벤트 리스너 한 번만 등록
+            window.onload = function() {
+                initMap();
+                
+                // 토글 버튼 이벤트 리스너
+                const toggleButton = document.getElementById('list-toggle');
+                toggleButton.addEventListener('click', toggleList);
+
+                // 닫기 버튼 이벤트 리스너
+                const closeButton = document.querySelector('.close-button');
+                closeButton.addEventListener('click', toggleList);
             };
-            listDiv.appendChild(div);
-          });
-        }
-
-        // 초기 목록 상태 설정
-        updateRestaurantList([]);
-
-        initMap();
-      </script>
+        </script>
     </body>
     </html>
   `;
 
-  const onMessage = (event) => {
-    if (event.nativeEvent.data === 'search') {
-      searchRestaurants();
+  const handleMessage = (event) => {
+    const data = JSON.parse(event.nativeEvent.data);
+    if (data.type === 'openDetail') {
+      // MainTab 내에서 다이어리 탭으로 이동하고 DiaryDetail 스크린으로 이동
+      navigation.navigate('MainTab', {
+        screen: '다이어리',
+        params: {
+          screen: 'DiaryDetail',
+          params: { diary: data.diary }
+        }
+      });
+    } else if (data.type === 'log') {
+      console.log('WebView:', data.message);
     }
   };
 
   return (
-    <WebView
-      ref={webViewRef}
-      source={{html: simpleHtml}}
-      style={styles.map}
-      javaScriptEnabled={true}
-      onMessage={onMessage}
-    />
+    <SafeAreaView style={styles.container}>
+      <View style={styles.webviewContainer}>
+        <WebView
+          ref={webViewRef}
+          source={{ html: simpleHtml }}
+          style={styles.webview}
+          onMessage={handleMessage}
+        />
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  map: {
+  container: {
     flex: 1,
+    backgroundColor: 'transparent',
+  },
+  webviewContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  webview: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
 });
 
