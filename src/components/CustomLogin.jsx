@@ -11,22 +11,23 @@ const CustomLogin = () => {
     if (!email) return;
 
     try {
-      // 이메일 확인 API 호출
-      const response = await api.post('/api/v1/auth/check-email', {
+      // 이메일 체크 API 호출 시 loginType도 함께 전송
+      const response = await api.post(`/api/v1/auth/check-email`, {
         userEmail: email,
+        loginType: 'email'  // 자체 이메일 로그인임을 명시
       });
 
-      // 이메일이 존재하면 비밀번호 입력 화면으로 이동
-      navigation.navigate('PasswordLogin', { email });
+      if(response.status === 200){
+        // 이메일이 존재하고 로그인 타입이 일치하면 비밀번호 입력 화면으로 이동
+        navigation.navigate('PasswordLogin', { email });
+      }
 
     } catch (error) {
-      console.error('이메일 확인 에러:', error);
-
-      // 이메일이 존재하지 않는 경우
       if (error.response?.status === 404) {
+        // 이메일이 존재하지 않는 경우
         Alert.alert(
           '회원가입 안내',
-          '일치하는 이메일이 없습니다.\n회원가입을 하시겠습니까?',
+          '가입된 이메일이 없습니다.\n회원가입을 하시겠습니까?',
           [
             {
               text: '취소',
@@ -41,6 +42,16 @@ const CustomLogin = () => {
             }
           ]
         );
+      } else if (error.response?.status === 409) {
+        // 이메일은 존재하지만 로그인 타입이 다른 경우
+        Alert.alert(
+          '로그인 안내',
+          '해당 이메일은 카카오 계정으로 가입되어 있습니다.\n카카오 로그인을 이용해주세요.',
+          [{ text: '확인' }]
+        );
+      } else {
+        console.error('이메일 확인 에러:', error);
+        Alert.alert('오류', '이메일 확인 중 문제가 발생했습니다.');
       }
     }
   };
