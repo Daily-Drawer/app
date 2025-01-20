@@ -1,5 +1,5 @@
 import React, {useRef} from 'react';
-import {View, TouchableOpacity, StyleSheet, Animated, Text, SafeAreaView} from 'react-native';
+import {View, TouchableOpacity, StyleSheet, Animated, Text, SafeAreaView, Platform} from 'react-native';
 
 const CustomBottomTab = ({state, navigation, insets, descriptors}) => {
   const tab1Value = useRef(new Animated.Value(0)).current;
@@ -33,8 +33,8 @@ const CustomBottomTab = ({state, navigation, insets, descriptors}) => {
             switch (label) {
               case '근처 맛집':
                 return bool ? map_on : map_off;
-              case '음식 추천':
-                return bool ? randomfood_on : randomfood_off;
+              case '다이어리':
+                return bool ? diray_on : diray_off;
               case '그룹':
                 return bool ? users_on : users_off;
               case '내정보':
@@ -94,13 +94,13 @@ const CustomBottomTab = ({state, navigation, insets, descriptors}) => {
 
 const map_on = require('../assets/bottomtaps/map_on.png');
 const map_off = require('../assets/bottomtaps/map.png');
-const randomfood_on = require('../assets/bottomtaps/randomfood_on.png');
-const randomfood_off = require('../assets/bottomtaps/randomfood_off.png');
 const users_on = require('../assets/bottomtaps/users_on.png');
 const users_off = require('../assets/bottomtaps/users.png');
 const user_on = require('../assets/bottomtaps/user_on.png');
 const user_off = require('../assets/bottomtaps/user.png');
 const some = require('../assets/bottomtaps/some.png');
+const diray_off = require('../assets/bottomtaps/diary_off.png');
+const diray_on = require('../assets/bottomtaps/diary_on.png');
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -117,18 +117,18 @@ const styles = StyleSheet.create({
     borderTopWidth: 0.5,
     borderColor: '#C3C3C3',
     backgroundColor: '#FFF',
-    paddingTop: 8,
-    height: 80,  // 고정 높이 설정
+    paddingTop: 0,
+    height: 70,  // 고정 높이 설정
   },
   bottomTabBarWrapper: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10
+    marginBottom: 10,
   },
   AnimatedImage: {
-    width: 28,
-    height: 28,
+    width: 24,
+    height: 24,
   },
   iconTextContainer: {
     justifyContent: 'center',
@@ -136,8 +136,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   iconText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: Platform.select({
+      ios: 11,
+      android: 10,
+    }),
+    fontWeight: '500',
   },
 });
 
