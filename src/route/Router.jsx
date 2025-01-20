@@ -27,7 +27,7 @@ const MainTab = () => {
         headerShown: false,
       }}
       backBehavior="history">
-      <Tab.Screen name="근처 맛집" component={HomeMap} />
+      <Tab.Screen name="지도" component={HomeMap} />
       <Tab.Screen name="다이어리" component={DiaryStack}
         options={{
           tabBarLabel: '다이어리',
