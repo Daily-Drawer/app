@@ -23,7 +23,7 @@ api.interceptors.request.use(
       data: config.data,
       params: config.params
     });
-    
+
     if (config.params) {
       Object.keys(config.params).forEach(key => {
         if (typeof config.params[key] === 'string') {
