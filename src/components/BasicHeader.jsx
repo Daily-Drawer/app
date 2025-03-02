@@ -1,22 +1,33 @@
 import {useNavigation} from '@react-navigation/native';
 import React from 'react';
 import {Text, View, StyleSheet, TouchableOpacity, Image} from 'react-native';
+import { ICON_SIZES, ICON_CONTAINER_SIZES } from '../utils/iconSize';
 
-const BasicHeader = ({title}) => {
-  const navigiation = useNavigation();
+const BasicHeader = ({title, rediary, onRightPress}) => {
+  const navigation = useNavigation();
   return (
     <View style={styles.headerWrapper}>
       <TouchableOpacity
-        onPress={() => navigiation.goBack()}>
+        onPress={() => navigation.goBack()}>
         <Image style={styles.backbuttonimg} source={backbutton} />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>{title}</Text>
-      <View style={styles.backbuttonimg} />
+      {rediary ? (
+        <TouchableOpacity 
+          style={styles.headerRediary}
+          onPress={onRightPress}
+        >
+          <Image source={editicon} style={styles.editicon} />
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.backbuttonimg} />
+      )}
     </View>
   );
 };
 
 const backbutton = require('../assets/icon/leftbackicon.png');
+const editicon = require('../assets/icon/editicon.png');
 
 const styles = StyleSheet.create({
   headerWrapper: {
@@ -30,8 +41,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   backbuttonimg: {
-    width: 24,
-    height: 24,
+    width: ICON_SIZES.md,
+    height: ICON_SIZES.md,
     zIndex: 1,
   },
   headerTitle: {
@@ -40,9 +51,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
+  headerRediary: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  RediaryText: {
+    fontSize: 16,
+    color: 'blue',
+    fontWeight: '500',
+  },
   shareicons: {
-    width: 44,
-    height: 44,
+    width: ICON_CONTAINER_SIZES.md,
+    height: ICON_CONTAINER_SIZES.md,
+  },
+  editicon: {
+    width: ICON_SIZES.md,
+    height: ICON_SIZES.md,
+    opacity: 0.9,
   },
 });
 
