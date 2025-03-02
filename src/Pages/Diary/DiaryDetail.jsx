@@ -14,34 +14,50 @@ import {
 } from 'react-native';
 import BasicHeader from '../../components/BasicHeader';
 import ImageViewer from '../../components/ImageViewer';
-import { useRoute } from '@react-navigation/native';
-import { ReadDiaryDetail } from '../../apis/diary';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import useDiaryStore from '../../store/diaryStore';
+import CustomTextTitle from '../../components/CustomTextTitle';
 
 const { width } = Dimensions.get('window');
 
 const DiaryDetail = () => {
   const route = useRoute();
-  const diaryId = route.params?.diary.diaryId;
+  const navigation = useNavigation();
+  const diaryId = route.params?.diaryId;
+  const { diaries } = useDiaryStore();
   const [diary, setDiary] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchDiaryDetail();
-  }, [diaryId]);
+    // store에서 해당 다이어리 찾기
+    const foundDiary = diaries.find(d => d.diaryId === diaryId);
+    if (foundDiary) {
+      setDiary(foundDiary);
+    } else {
+      Alert.alert('오류', '다이어리를 찾을 수 없습니다.');
+    }
+    setIsLoading(false);
+  }, [diaryId, diaries]);
 
-  const fetchDiaryDetail = async () => {
-    try {
-      const response = await ReadDiaryDetail(diaryId);
-      if (response.data) {
-        setDiary(response.data);
-      }
-    } catch (error) {
-      console.error('다이어리 상세 조회 실패:', error);
-      Alert.alert('오류', '다이어리 상세 정보를 불러오는데 실패했습니다.');
-    } finally {
-      setIsLoading(false);
+  const handleEdit = () => {
+    if (diary) {
+      navigation.navigate('DiaryEdit', {
+        diary: {
+          diaryId: diary.diaryId,
+          title: diary.title,
+          content: diary.content,
+          placeName: diary.placeName,
+          visitDate: diary.visitDate,
+          latitude: diary.latitude,
+          longitude: diary.longitude,
+          rate: diary.rate,
+          markerNumber: diary.markerNumber,
+          existingImgList: diary.uploadImgList || [],
+          newImgList: []
+        }
+      });
     }
   };
 
@@ -87,11 +103,18 @@ const DiaryDetail = () => {
   return (
     <SafeAreaView style={styles.AreaView}>
       <View>
-        <BasicHeader title="피드" />
+        <BasicHeader
+          rediary="수정"
+          onRightPress={handleEdit}
+        />
       </View>
       <ScrollView style={styles.container} alwaysBounceVertical={false}>
         {/* 이미지 슬라이더 */}
         <View style={styles.imageContainer}>
+          <View style={styles.titleView}>
+            <CustomTextTitle>{diary?.title}</CustomTextTitle>
+          </View>
+          <View>
           {images.length > 0 ? (
             <>
               <FlatList
@@ -123,13 +146,13 @@ const DiaryDetail = () => {
               <Text style={styles.placeholderText}>등록된 이미지가 없습니다</Text>
             </View>
           )}
+          </View>
         </View>
 
         {/* 콘텐츠 영역 */}
         <View style={styles.contentContainer}>
           {/* 제목 */}
           <View>
-          <Text style={styles.title}>{diary?.title}</Text>
           <Text style={styles.visitDate}>{diary?.visitDate}</Text>
           </View>
 
@@ -166,9 +189,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    marginBottom: 30,
   },
   imageContainer: {
     position: 'relative',
+    paddingBottom: 0,
+  },
+  titleView: {
+    padding: 16,
   },
   imageSlider: {
     width: width,
@@ -237,6 +265,8 @@ const styles = StyleSheet.create({
   place: {
     fontSize: 16,
     color: '#666666',
+      fontWeight: '500',
+      fontFamily: 'BMJUA',
   },
   rateContainer: {
     backgroundColor: '#FFB800',
@@ -251,6 +281,8 @@ const styles = StyleSheet.create({
   },
   content: {
     fontSize: 16,
+    fontWeight: '300',
+    fontFamily: 'BMJUA',
     color: '#333333',
     lineHeight: 24,
   },
@@ -258,6 +290,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     marginTop: 16,
+    fontWeight: '500',
+    fontFamily: 'BMJUA',
   },
   loadingContainer: {
     flex: 1,
