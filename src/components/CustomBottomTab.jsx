@@ -35,8 +35,6 @@ const CustomBottomTab = ({state, navigation, insets, descriptors}) => {
                 return bool ? map_on : map_off;
               case '다이어리':
                 return bool ? diray_on : diray_off;
-              case '그룹':
-                return bool ? users_on : users_off;
               case '내정보':
                 return bool ? user_on : user_off;
               default:
@@ -94,8 +92,8 @@ const CustomBottomTab = ({state, navigation, insets, descriptors}) => {
 
 const map_on = require('../assets/bottomtaps/icon_04_on.png');
 const map_off = require('../assets/bottomtaps/icon_04_off.png');
-const users_on = require('../assets/bottomtaps/icon_02_on.png');
-const users_off = require('../assets/bottomtaps/icon_02_off.png');
+// const users_on = require('../assets/bottomtaps/icon_02_on.png');
+// const users_off = require('../assets/bottomtaps/icon_02_off.png');
 const user_on = require('../assets/bottomtaps/icon_01_on.png');
 const user_off = require('../assets/bottomtaps/icon_01_off.png');
 const some = require('../assets/bottomtaps/some.png');
@@ -124,7 +122,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   AnimatedImage: {
     width: 24,
@@ -141,6 +139,7 @@ const styles = StyleSheet.create({
       android: 10,
     }),
     fontWeight: '500',
+    fontFamily: 'BMJUA',
   },
 });
 
