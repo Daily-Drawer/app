@@ -1,28 +1,177 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import WebView from 'react-native-webview';
-import { StyleSheet, Image, View, SafeAreaView } from 'react-native';
+import { StyleSheet, Image, View, Platform, TouchableOpacity, FlatList, Text, Animated, Alert } from 'react-native';
 import { KAKAO_API_KEY } from '@env';
 import useDiaryStore from '../../store/diaryStore';
 import { useNavigation } from '@react-navigation/native';
+import { wp, hp, fs, spacing, metrics } from '../../utils/responsive';
+import { ICON_CONTAINER_SIZES } from '../../utils/iconSize';
+import PermissionUtil from '../../utils/PermissionUtil';
+import Geolocation from '@react-native-community/geolocation';
 
 const KaKaoMapView = () => {
-  const webViewRef = useRef();
+  const webViewRef = useRef(null);
+  const watchIdRef = useRef(null);
   const navigation = useNavigation();
   const { diaries, fetchDiaries } = useDiaryStore();
-  
+  const isIos = Platform.OS === 'ios';
+  const [isListVisible, setIsListVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-300)).current;
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
+  const [isTrackingLocation, setIsTrackingLocation] = useState(false);
+
   // 마커 이미지 URI 가져오기
-  const goodMarkerUri = Image.resolveAssetSource(require('../../assets/icon/pin_01.png')).uri;
-  const sosoMarkerUri = Image.resolveAssetSource(require('../../assets/icon/pin_02.png')).uri;
-  const badMarkerUri = Image.resolveAssetSource(require('../../assets/icon/pin_03.png')).uri;
-  const starMarkerUri = Image.resolveAssetSource(require('../../assets/icon/pin_04.png')).uri;
+  const getMarkerImageUri = (imagePath) => {
+    const resolvedImage = Image.resolveAssetSource(imagePath);
+    if (Platform.OS === 'ios') {
+      return resolvedImage.uri.replace('file://', '');
+    }
+    return resolvedImage.uri;
+  };
 
-  // 아이콘 이미지 URI 가져오기
+  // 마커 이미지 URI 설정
+  const goodMarkerUri = getMarkerImageUri(require('../../assets/icon/pin_01.png'));
+  const sosoMarkerUri = getMarkerImageUri(require('../../assets/icon/pin_02.png'));
+  const badMarkerUri = getMarkerImageUri(require('../../assets/icon/pin_03.png'));
+  const starMarkerUri = getMarkerImageUri(require('../../assets/icon/pin_04.png'));
   const closeIconUri = Image.resolveAssetSource(require('../../assets/icon/closeicon.png')).uri;
-  const menuIconUri = Image.resolveAssetSource(require('../../assets/icon/menuicon.png')).uri;
 
+  // 초기 로드 시 데이터 가져오기
   useEffect(() => {
     fetchDiaries();
+    startLocationTracking();
+    return () => stopLocationTracking();
   }, []);
+
+  const startLocationTracking = () => {
+    watchIdRef.current = Geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        updateCurrentLocation(latitude, longitude);
+      },
+      (error) => {
+        console.error('Location tracking error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        distanceFilter: 10,
+        interval: 5000,
+        fastestInterval: 2000,
+      }
+    );
+  };
+
+  const stopLocationTracking = () => {
+    if (watchIdRef.current !== null) {
+      Geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+  };
+
+  const updateCurrentLocation = (latitude, longitude) => {
+    const script = `
+      (function() {
+        if (typeof map !== 'undefined') {
+          const imageSrc = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-12 -12 24 24'%3E%3Cstyle%3E.pulse%7Banimation:pulse 2s cubic-bezier(.37,0,.63,1) infinite%7D@keyframes pulse%7B0%25%7Btransform:scale(.95);opacity:.5%7D50%25%7Btransform:scale(1.3);opacity:0%7D100%25%7Btransform:scale(.95);opacity:0%7D%7D%3C/style%3E%3Ccircle class='pulse' cx='0' cy='0' r='8' fill='%234285F4' opacity='.5'/%3E%3Ccircle cx='0' cy='0' r='6' fill='%234285F4'/%3E%3Ccircle cx='0' cy='0' r='3' fill='white'/%3E%3C/svg%3E";
+          const imageSize = new kakao.maps.Size(48, 48);
+          const imageOption = { offset: new kakao.maps.Point(24, 24) };
+          
+          const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+          
+          if (window.currentLocationMarker) {
+            window.currentLocationMarker.setMap(null);
+          }
+          
+          window.currentLocationMarker = new kakao.maps.Marker({
+            position: new kakao.maps.LatLng(${latitude}, ${longitude}),
+            map: map,
+            image: markerImage,
+            zIndex: 100
+          });
+
+          if (window.accuracyCircle) {
+            window.accuracyCircle.setMap(null);
+          }
+          
+          window.accuracyCircle = new kakao.maps.Circle({
+            map: map,
+            center: new kakao.maps.LatLng(${latitude}, ${longitude}),
+            radius: 50,
+            strokeWeight: 1,
+            strokeColor: '#4285F4',
+            strokeOpacity: 0.1,
+            strokeStyle: 'solid',
+            fillColor: '#4285F4',
+            fillOpacity: 0.05
+          });
+        }
+        return true;
+      })();
+    `;
+
+    webViewRef.current?.injectJavaScript(script);
+  };
+
+  // 지도 초기화 (새로 추가)
+  useEffect(() => {
+    if (webViewRef.current && !isMapInitialized) {
+      const initScript = `
+        (function() {
+          if (typeof map === 'undefined') {
+            initMap();
+            ${JSON.stringify(diaries)}.forEach(function(diary) {
+              var markerImage = getMarkerImage(diary.markerNumber);
+              var marker = new kakao.maps.Marker({
+                map: map,
+                position: new kakao.maps.LatLng(diary.latitude, diary.longitude),
+                image: markerImage
+              });
+
+              kakao.maps.event.addListener(marker, 'click', function() {
+                showModal(diary);
+              });
+
+              markers.push(marker);
+            });
+            renderDiaryList();
+          }
+          return true;
+        })();
+      `;
+      webViewRef.current.injectJavaScript(initScript);
+      setIsMapInitialized(true);
+    }
+  }, [webViewRef.current, isMapInitialized]);
+
+  // 다이어리 업데이트 처리 (기존 코드 수정)
+  useEffect(() => {
+    if (webViewRef.current && isMapInitialized && diaries.length > 0) {
+      const updateMapScript = `
+        if (typeof map !== 'undefined') {
+          markers.forEach(marker => marker.setMap(null));
+          markers = [];
+
+          ${JSON.stringify(diaries)}.forEach(function(diary) {
+            var markerImage = getMarkerImage(diary.markerNumber);
+            var marker = new kakao.maps.Marker({
+              map: map,
+              position: new kakao.maps.LatLng(diary.latitude, diary.longitude),
+              image: markerImage
+            });
+
+            kakao.maps.event.addListener(marker, 'click', function() {
+              showModal(diary);
+            });
+
+            markers.push(marker);
+          });
+
+          renderDiaryList();
+        }
+      `;
+      webViewRef.current.injectJavaScript(updateMapScript);
+    }
+  }, [diaries, isMapInitialized]);
 
   const simpleHtml = `
     <!DOCTYPE html>
@@ -30,7 +179,19 @@ const KaKaoMapView = () => {
     <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+        <script>
+            const goodMarkerUri = '${goodMarkerUri}';
+            const sosoMarkerUri = '${sosoMarkerUri}';
+            const badMarkerUri = '${badMarkerUri}';
+            const starMarkerUri = '${starMarkerUri}';
+        </script>
         <style>
+        @font-face {
+          font-family: 'BMJUA';
+          src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_one@1.0/BMJUA.woff') format('woff');
+          font-weight: normal;
+          font-style: normal;
+        }
             * {
                 margin: 0;
                 padding: 0;
@@ -60,10 +221,10 @@ const KaKaoMapView = () => {
             }
 
             #diary-list {
-                position: fixed;
+                position: absolute;
                 top: 0;
                 left: 0;
-                width: 80%;
+                width: 50%;
                 height: 100vh;
                 background: white;
                 border-top-right-radius: 12px;
@@ -71,27 +232,39 @@ const KaKaoMapView = () => {
                 box-shadow: 2px 0 6px rgba(0,0,0,0.1);
                 z-index: 9999;
                 transform: translateX(-100%);
-                transition: transform 0.3s ease-out;
+                transition: all 0.3s ease-out;
                 display: flex;
                 flex-direction: column;
+                visibility: hidden;
+                opacity: 0;
             }
 
             #diary-list.show {
                 transform: translateX(0);
+                visibility: visible;
+                opacity: 1;
+                overflow-y: auto;
             }
 
             .list-header {
                 padding: 20px;
+                margin-top: ${isIos ? '20%' : '20%'};
                 border-bottom: 1px solid #eee;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
             }
 
+            .list-title {
+                font-family: 'BMJUA';
+                font-size: 18px;
+            }
+
             .list-content {
                 flex: 1;
                 overflow-y: auto;
-                padding-bottom: 60px;
+                padding-bottom: 10%;
+                -webkit-overflow-scrolling: touch;
             }
 
             .empty-list {
@@ -104,64 +277,16 @@ const KaKaoMapView = () => {
                 padding: 20px;
             }
 
-            /* 목록 헤더 스타일 */
-            .list-header {
-                padding: 20px;
-                border-bottom: 1px solid #eee;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-
-            .list-title {
-                font-size: 18px;
-                font-weight: bold;
-            }
-
-            .close-button {
-                width: 24px;
-                height: 24px;
-                border: none;
-                background: none;
-                cursor: pointer;
-                padding: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .close-button img {
-                width: 100%;
-                height: 100%;
-            }
-
-            /* 목록 내용 컨테이너 */
-            .list-content {
-                flex: 1;
-                overflow-y: auto;
-                padding-bottom: 60px;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            #diary-list.show {
-                transform: translateX(0);
-            }
-            
             .diary-item {
                 padding: 15px;
                 border-bottom: 1px solid #eee;
                 cursor: pointer;
-            }
-            
-            .diary-item:last-child {
-                border-bottom: none;
-            }
-            
-            .diary-item:hover {
-                background: #f8f8f8;
+                text-align: left;
+                white-space: nowrap;
             }
             
             .diary-title {
+                font-family: 'BMJUA';
                 font-weight: bold;
                 margin-bottom: 4px;
                 font-size: 14px;
@@ -172,67 +297,49 @@ const KaKaoMapView = () => {
                 font-size: 12px;
             }
 
-            /* 현재 위치 버튼 스타일 */
-            #current-location {
-                position: absolute;
-                bottom: 60px; /* 40px 아래로 조정 */
-                right: 10px;
-                width: 40px;
-                height: 40px;
-                background: white;
-                border-radius: 50%;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                z-index: 1000;
-            }
-            
-            #current-location img {
-                width: 24px;
-                height: 24px;
-            }
-
-            /* 기존 모달 스타일 */
             #modal {
                 position: fixed;
-                bottom: 100px;
-                left: 0;
-                right: 0;
+                bottom: ${isIos ? '5%' : '9%'};
+                left: 3%;
+                right: 3%;
                 background: white;
                 padding: 20px;
                 border-radius: 15px;
                 box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-                margin: 0 10px;
                 transform: translateY(200%);
                 transition: transform 0.3s ease-out;
                 display: flex;
                 gap: 20px;
                 z-index: 1000;
             }
+
             #modal.show {
                 transform: translateY(0);
             }
+
             .modal-content {
                 flex: 1;
             }
+
             .modal-title {
+                font-family: 'BMJUA';
                 font-size: 18px;
-                font-weight: bold;
                 margin-bottom: 8px;
             }
+
             .modal-info {
                 color: #666;
                 font-size: 14px;
                 margin-bottom: 5px;
             }
+
             .modal-image {
                 width: 120px;
                 height: 120px;
                 object-fit: cover;
                 border-radius: 8px;
             }
+
             .no-image {
                 width: 120px;
                 height: 120px;
@@ -245,6 +352,7 @@ const KaKaoMapView = () => {
                 font-size: 12px;
                 text-align: center;
             }
+
             .detail-button {
                 background: #007AFF;
                 color: white;
@@ -253,158 +361,12 @@ const KaKaoMapView = () => {
                 border-radius: 8px;
                 margin-top: 10px;
                 cursor: pointer;
+                font-family: 'BMJUA';
             }
 
-            /* 목록 컨테이너 스타일 수정 */
-            #diary-list {
-                position: absolute;
-                top: 0px;
-                left: 0px;
-                width: 50%; /* 버튼과 같은 너비로 시작 */
-                background: white;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-                overflow: hidden; /* 초기에는 내용 숨김 */
-                z-index: 1000;
-                transition: all 0.3s ease-out;
-                visibility: hidden;
-                opacity: 0;
-            }
-
-            #diary-list.show {
-                width: 50%; /* 펼쳐졌을 때 너비 */
-                visibility: visible;
-                opacity: 1;
-                overflow-y: auto; /* 펼쳐졌을 때 스크롤 가능 */
-            }
-
-            .diary-item {
-                padding: 12px;
-                border-bottom: 1px solid #eee;
-                cursor: pointer;
-                text-align: left;
-                white-space: nowrap; /* 텍스트 줄바꿈 방지 */
-            }
-            
-            /* 목록 토글 버튼 스타일 수정 */
-            #list-toggle {
-                position: absolute;
-                bottom: 110px;
-                right: 10px;
-                width: 40px;
-                height: 40px;
-                background: white;
-                border-radius: 50%;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                z-index: 1000;
-            }
-
-            #list-toggle img {
-                width: 24px;
-                height: 24px;
-            }
-
-            /* 메뉴 아이콘 스타일 추가 */
-            .list-icon {
-                width: 24px;
-                height: 24px;
-                stroke: #666;
-            }
-
-            .list-icon path {
-                stroke: currentColor;
-            }
-
-            /* 현재 위치 버튼 */
-            #current-location {
-                position: absolute;
-                bottom: 60px;
-                right: 10px;
-                width: 40px;
-                height: 40px;
-                background: white;
-                border-radius: 50%;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                z-index: 1000;
-            }
-            
-            #current-location img {
-                width: 24px;
-                height: 24px;
-            }
-
-            /* 기존 모달 스타일 */
-            #modal {
-                position: fixed;
-                bottom: 40px;
-                left: 0;
-                right: 0;
-                background: white;
-                padding: 20px;
-                border-radius: 15px;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-                margin: 0 10px;
-                transform: translateY(200%);
-                transition: transform 0.3s ease-out;
-                display: flex;
-                gap: 20px;
-                z-index: 1000;
-            }
-            #modal.show {
-                transform: translateY(0);
-            }
-            .modal-content {
-                flex: 1;
-            }
-            .modal-title {
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 8px;
-            }
-            .modal-info {
-                color: #666;
-                font-size: 14px;
-                margin-bottom: 5px;
-            }
-            .modal-image {
-                width: 120px;
-                height: 120px;
-                object-fit: cover;
-                border-radius: 8px;
-            }
-            .no-image {
-                width: 120px;
-                height: 120px;
-                background: #f0f0f0;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #666;
-                font-size: 12px;
-                text-align: center;
-            }
-            .detail-button {
-                background: #007AFF;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 8px;
-                margin-top: 10px;
-                cursor: pointer;
-            }
-
-            /* 목록 내용이 하단 네비게이션 바 뒤로 가려지지 않도록 패딩 추가 */
-            .list-content {
-                flex: 1;
-                padding-bottom: 60px; /* 하단 네비게이션 바 높이만큼 패딩 추가 */
+            /* 웹뷰 내부 버튼 스타일 제거 */
+            #list-toggle, #current-location {
+              display: none;
             }
         </style>
     </head>
@@ -422,12 +384,6 @@ const KaKaoMapView = () => {
                 <!-- 여기에 다이어리 목록이 렌더링됨 -->
             </div>
         </div>
-        <div id="list-toggle">
-            <img src="${menuIconUri}" alt="메뉴" />
-        </div>
-        <div id="current-location">
-            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTEyIDhjLTIuMjEgMC00IDEuNzktNCA0czEuNzkgNCA0IDQgNC0xLjc5IDQtNC0xLjc5LTQtNC00em04Ljk0IDNjLS40Ni00LjE3LTMuNzctNy40OC03Ljk0LTcuOTRWMWgtMnYyLjA2QzYuODMgMy41MiAzLjUyIDYuODMgMy4wNiAxMUgxdjJoMi4wNmMuNDYgNC4xNyAzLjc3IDcuNDggNy45NCA3Ljk0VjIzaDJ2LTIuMDZjNC4xNy0uNDYgNy40OC0zLjc3IDcuOTQtNy45NEgyM3YtMmgtMi4wNnpNMTIgMTljLTMuODcgMC03LTMuMTMtNy03czMuMTMtNyA3LTcgNyAzLjEzIDcgNy0zLjEzIDctNyA3eiIvPjwvc3ZnPg==" alt="현재 위치"/>
-        </div>
         <div id="modal">
             <div class="modal-content">
                 <div class="modal-title"></div>
@@ -438,7 +394,11 @@ const KaKaoMapView = () => {
         </div>
         <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_API_KEY}"></script>
         <script>
-            // 디버깅용 console.log 대체 함수
+            var map;
+            var markers = [];
+            var selectedDiary = null;
+            var isListVisible = false;
+
             function log(message) {
                 window.ReactNativeWebView.postMessage(JSON.stringify({
                     type: 'log',
@@ -446,10 +406,33 @@ const KaKaoMapView = () => {
                 }));
             }
 
-            var map;
-            var markers = [];
-            var selectedDiary = null;
-            var isListVisible = false;
+            // diaries가 변경될 때마다 지도 업데이트하는 함수
+            function updateMarkers(diaries) {
+                // 기존 마커들 제거
+                if (markers && markers.length > 0) {
+                    markers.forEach(marker => marker.setMap(null));
+                    markers = [];
+                }
+
+                // 새로운 마커 생성 다이어리 마커
+                diaries.forEach(function(diary) {
+                    var markerImage = getMarkerImage(diary.markerNumber);
+                    var marker = new kakao.maps.Marker({
+                        map: map,
+                        position: new kakao.maps.LatLng(diary.latitude, diary.longitude),
+                        image: markerImage
+                    });
+
+                    kakao.maps.event.addListener(marker, 'click', function() {
+                        showModal(diary);
+                    });
+
+                    markers.push(marker);
+                });
+
+                // 목록 다시 렌더링
+                renderDiaryList();
+            }
 
             function getMarkerImage(markerNumber) {
                 var imageSize;
@@ -458,23 +441,23 @@ const KaKaoMapView = () => {
                 switch(markerNumber) {
                     case 1: 
                         imageSize = new kakao.maps.Size(34, 34);
-                        markerUri = '${goodMarkerUri}'; 
+                        markerUri = goodMarkerUri;
                         break;
                     case 2: 
                         imageSize = new kakao.maps.Size(34, 34);
-                        markerUri = '${sosoMarkerUri}'; 
+                        markerUri = sosoMarkerUri;
                         break;
                     case 3: 
                         imageSize = new kakao.maps.Size(34, 34);
-                        markerUri = '${badMarkerUri}'; 
+                        markerUri = badMarkerUri;
                         break;
                     case 4: 
-                        imageSize = new kakao.maps.Size(26, 26); // star 마커만 크기 다르게 설정
-                        markerUri = '${starMarkerUri}'; 
+                        imageSize = new kakao.maps.Size(26, 26);
+                        markerUri = starMarkerUri;
                         break;
-                    default: 
+                    default:
                         imageSize = new kakao.maps.Size(34, 34);
-                        markerUri = '${sosoMarkerUri}';
+                        markerUri = sosoMarkerUri;
                 }
                 
                 return new kakao.maps.MarkerImage(markerUri, imageSize);
@@ -482,14 +465,22 @@ const KaKaoMapView = () => {
 
             function showModal(diary) {
                 log('showModal called with diary: ' + JSON.stringify(diary));
-                selectedDiary = diary;
+                selectedDiary = {
+                    ...diary,
+                    diaryId: diary.diaryId || diary.diary_id 
+                };
                 const modal = document.getElementById('modal');
                 const title = modal.querySelector('.modal-title');
                 const info = modal.querySelector('.modal-info');
+                const diaryId = modal.querySelector('.modal-diaryId');
                 const imageContainer = modal.querySelector('.modal-image-container');
 
                 title.textContent = diary.title;
-                info.innerHTML = diary.placeName + '<br/>' + new Date(diary.visitDate).toLocaleDateString();
+                info.innerHTML = diary.placeName + '<br/>' + new Date(diary.visitDate).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
 
                 imageContainer.innerHTML = '';
                 
@@ -506,14 +497,15 @@ const KaKaoMapView = () => {
                 }
 
                 modal.classList.add('show');
-                log('Modal should be visible now');
             }
 
             function openDetail() {
                 if (selectedDiary) {
                     window.ReactNativeWebView.postMessage(JSON.stringify({
                         type: 'openDetail',
-                        diary: selectedDiary
+                        diary: {
+                            diaryId: selectedDiary.diaryId || selectedDiary.diary_id
+                        }
                     }));
                 }
             }
@@ -529,7 +521,6 @@ const KaKaoMapView = () => {
                     listContainer.classList.remove('show');
                 }
                 
-                console.log('List visibility:', !isListVisible);
                 window.ReactNativeWebView.postMessage(JSON.stringify({
                     type: 'log',
                     message: 'List toggled: ' + !isListVisible
@@ -556,7 +547,11 @@ const KaKaoMapView = () => {
                     item.innerHTML = \`
                         <div class="diary-title">\${diary.title}</div>
                         <div class="diary-info">\${diary.placeName}</div>
-                        <div class="diary-info">\${new Date(diary.visitDate).toLocaleDateString()}</div>
+                        <div class="diary-info">\${new Date(diary.visitDate).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        })}</div>
                     \`;
                     item.onclick = function() {
                         map.setCenter(new kakao.maps.LatLng(diary.latitude, diary.longitude));
@@ -567,21 +562,7 @@ const KaKaoMapView = () => {
                 });
             }
 
-            // 현재 위치로 이동
-            function moveToCurrentLocation() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(function(position) {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        const currentPos = new kakao.maps.LatLng(lat, lng);
-                        map.setCenter(currentPos);
-                        map.setLevel(7);
-                    });
-                }
-            }
-
             function initMap() {
-                log('initMap called');
                 var container = document.getElementById('map');
                 var options = {
                     center: new kakao.maps.LatLng(37.5665, 126.9780),
@@ -590,7 +571,6 @@ const KaKaoMapView = () => {
                 map = new kakao.maps.Map(container, options);
 
                 if (${JSON.stringify(diaries?.length)} > 0) {
-                    log('Creating markers for diaries: ' + ${JSON.stringify(diaries)});
                     ${JSON.stringify(diaries)}.forEach(function(diary) {
                         var markerImage = getMarkerImage(diary.markerNumber);
                         var marker = new kakao.maps.Marker({
@@ -600,7 +580,6 @@ const KaKaoMapView = () => {
                         });
 
                         kakao.maps.event.addListener(marker, 'click', function() {
-                            log('Marker clicked for diary: ' + JSON.stringify(diary));
                             showModal(diary);
                         });
 
@@ -612,80 +591,364 @@ const KaKaoMapView = () => {
                     map.setLevel(7);
                 }
 
-                // 현재 위치 버튼 이벤트
-                document.getElementById('current-location').onclick = moveToCurrentLocation;
-
-                // 다이어리 목록 렌더링
-                renderDiaryList();
-
-                // 지도 클릭 시 목록 닫기
+                // 지도 클릭 시 모달 닫기 이벤트 추가
                 kakao.maps.event.addListener(map, 'click', function() {
-                    if (isListVisible) {
-                        toggleList();
+                    const modal = document.getElementById('modal');
+                    if (modal) {
+                        modal.classList.remove('show');
                     }
-                    document.getElementById('modal').classList.remove('show');
                 });
             }
 
             // 초기화 시 이벤트 리스너 한 번만 등록
-            window.onload = function() {
+            window.addEventListener('load', function() {
                 initMap();
+                updateMarkers(${JSON.stringify(diaries)});
                 
                 // 토글 버튼 이벤트 리스너
-                const toggleButton = document.getElementById('list-toggle');
+                const toggleButton = document.querySelector('.close-button');
                 toggleButton.addEventListener('click', toggleList);
-
-                // 닫기 버튼 이벤트 리스너
-                const closeButton = document.querySelector('.close-button');
-                closeButton.addEventListener('click', toggleList);
-            };
+            });
         </script>
     </body>
     </html>
   `;
 
-  const handleMessage = (event) => {
-    const data = JSON.parse(event.nativeEvent.data);
-    if (data.type === 'openDetail') {
-      // MainTab 내에서 다이어리 탭으로 이동하고 DiaryDetail 스크린으로 이동
-      navigation.navigate('MainTab', {
-        screen: '다이어리',
-        params: {
-          screen: 'DiaryDetail',
-          params: { diary: data.diary }
+  const handleWebViewMessage = useCallback((event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'location') {
+        // 위치 관련 메시지 처리에서 마커 생성 로직이 있다면 제거
+        const { latitude, longitude } = data;
+        updateCurrentLocation(latitude, longitude);
+      }
+      if (data.type === 'openDetail') {
+        if (data.diary && data.diary.diaryId) {
+          // 중첩된 네비게이터를 통한 네비게이션
+          navigation.navigate('다이어리', {
+            screen: 'DiaryDetail',
+            params: {
+              diaryId: data.diary.diaryId,
+            },
+          });
+        } else {
+          console.error('Invalid diary data:', data);
         }
-      });
-    } else if (data.type === 'log') {
-      console.log('WebView:', data.message);
+      }
+    } catch (error) {
+      console.error('WebView message parsing error:', error);
+    }
+  }, [navigation]);
+
+  const handleListToggle = () => {
+    setIsListVisible(!isListVisible);
+    Animated.timing(slideAnim, {
+      toValue: isListVisible ? -300 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const getCurrentPosition = () => {
+    return new Promise((resolve, reject) => {
+      Geolocation.getCurrentPosition(
+        position => resolve(position),
+        error => reject(error),
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 10000,
+        }
+      );
+    });
+  };
+
+  const handleCurrentLocation = async () => {
+    
+    const locationGranted = await PermissionUtil.checkPermission('location');
+    
+    if (locationGranted) {
+      if (isTrackingLocation) {
+        // 위치 추적 중지
+        const script = `
+          (function() {
+            if (window.currentLocationMarker) {
+              window.currentLocationMarker.setMap(null);
+              window.currentLocationMarker = null;
+            }
+            if (window.accuracyCircle) {
+              window.accuracyCircle.setMap(null);
+              window.accuracyCircle = null;
+            }
+            return true;
+          })();
+        `;
+        webViewRef.current?.injectJavaScript(script);
+        setIsTrackingLocation(false);
+      } else {
+        try {
+          const position = await getCurrentPosition();
+          const { latitude, longitude } = position.coords;
+
+          const script = `
+            (function() {
+              const currentPos = new kakao.maps.LatLng(${latitude}, ${longitude});
+              map.setCenter(currentPos);
+              map.setLevel(3);
+              return true;
+            })();
+          `;
+          
+          webViewRef.current?.injectJavaScript(script);
+          
+          // 펄스 효과 마커 업데이트
+          setTimeout(() => {
+            updateCurrentLocation(latitude, longitude);
+          }, 100);
+
+          setIsTrackingLocation(true);
+        } catch (error) {
+          console.error('위치 정보 가져오기 실패:', error);
+          Alert.alert(
+            '위치 확인 실패',
+            '현재 위치를 가져오는데 실패했습니다. 잠시 후 다시 시도해주세요.',
+            [{ text: '확인', style: 'default' }]
+          );
+        }
+      }
+    } else {
+      const granted = await PermissionUtil.requestPermission('location');
+      if (!granted) {
+        Alert.alert(
+          '위치 권한 필요',
+          '현재 위치를 확인하기 위해서는 위치 권한이 필요합니다.',
+          [
+            { text: '취소', style: 'cancel' },
+            { text: '설정으로 이동', onPress: PermissionUtil.openSettings },
+          ]
+        );
+      } else {
+        handleCurrentLocation();
+      }
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.webviewContainer}>
-        <WebView
-          ref={webViewRef}
-          source={{ html: simpleHtml }}
-          style={styles.webview}
-          onMessage={handleMessage}
-        />
+  const handleDiaryItemPress = (diary) => {
+    // 지도 이동 및 목록 닫기
+    webViewRef.current?.injectJavaScript(`
+      if (typeof map !== 'undefined') {
+        const position = new kakao.maps.LatLng(${diary.latitude}, ${diary.longitude});
+        map.panTo(position);
+        map.setLevel(3);
+      }
+      true;
+    `);
+    handleListToggle(); // 목록 닫기
+  };
+
+  const renderDiaryItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.diaryItem}
+      onPress={() => handleDiaryItemPress(item)}
+    >
+      <View style={styles.diaryContent}>
+        <Text style={styles.diaryTitle}>{item.title}</Text>
+        <Text style={styles.diaryPlace}>{item.placeName}</Text>
+        <Text style={styles.diaryDate}>
+          {new Date(item.visitDate).toLocaleDateString()}
+        </Text>
       </View>
-    </SafeAreaView>
+      {item.uploadImgList?.[0] && (
+        <Image
+          source={{ uri: item.uploadImgList[0] }}
+          style={styles.diaryImage}
+        />
+      )}
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      <WebView
+        ref={webViewRef}
+        source={{ html: simpleHtml }}
+        onMessage={handleWebViewMessage}
+        keyboardDisplayRequiresUserAction={false}
+        hideKeyboardAccessoryView={true}
+        textInteractionEnabled={false}
+        style={styles.webview}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView error: ', nativeEvent);
+        }}
+        geolocationEnabled={true}
+        javaScriptEnabled={true}
+        allowsBackForwardNavigationGestures={false}
+        scrollEnabled={false}
+        bounces={false}
+        contentMode="mobile"
+        cacheEnabled={true}
+        androidLayerType={Platform.select({
+          android: 'hardware',
+          default: undefined,
+        })}
+      />
+
+      <Animated.View
+        style={[
+          styles.listContainer,
+          {
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
+      >
+        <View style={styles.listHeader}>
+          <View />
+            <Text style={styles.listTitle}>다이어리 목록</Text>
+          <TouchableOpacity onPress={handleListToggle}>
+            <Image
+              source={require('../../assets/icon/closeicon.png')}
+              style={styles.closeIcon}
+            />
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={diaries?.filter(diary => diary?.diaryId)}
+          renderItem={renderDiaryItem}
+          keyExtractor={item => item.diaryId.toString()}
+          contentContainerStyle={styles.listContent}
+        />
+      </Animated.View>
+
+      <View style={styles.mapControlContainer}>
+        <TouchableOpacity
+          style={styles.controlButton}
+          onPress={handleListToggle}
+        >
+          <Image
+            source={require('../../assets/icon/menuicon.png')}
+            style={styles.menuIcon}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.controlButton}
+          onPress={handleCurrentLocation}
+        >
+          <Image
+            source={
+              isTrackingLocation
+                ? require('../../assets/icon/location_on.png')
+                : require('../../assets/icon/location_off.png')
+            }
+            style={styles.locationIcon}
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
-  },
-  webviewContainer: {
-    flex: 1,
-    backgroundColor: 'transparent',
   },
   webview: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  listContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: wp(60),
+    backgroundColor: 'white',
+    borderTopRightRadius: wp(5),
+    borderBottomRightRadius: wp(5),
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    marginTop: Platform.OS === 'ios' ? metrics.statusBarHeight + hp(2) : metrics.statusBarHeight,
+  },
+  listTitle: {
+    fontSize: fs(18),
+    fontWeight: '500',
+    fontFamily: 'BMJUA',
+  },
+  closeIcon: {
+    width: wp(4),
+    height: wp(4),
+  },
+  listContent: {
+    padding: spacing.sm,
+  },
+  diaryItem: {
+    flexDirection: 'row',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    alignItems: 'center',
+  },
+  diaryContent: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  diaryTitle: {
+    fontSize: fs(16),
+    fontWeight: '500',
+    marginBottom: spacing.xs,
+  },
+  diaryPlace: {
+    fontSize: fs(14),
+    color: '#666',
+    marginBottom: spacing.xs,
+  },
+  diaryDate: {
+    fontSize: fs(12),
+    color: '#999',
+  },
+  diaryImage: {
+    width: wp(15),
+    height: wp(15),
+    borderRadius: wp(2),
+  },
+  mapControlContainer: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? hp(10) : hp(12),
+    right: wp(3),
+    gap: spacing.sm,
+  },
+  controlButton: {
+    width: ICON_CONTAINER_SIZES.md,
+    height: ICON_CONTAINER_SIZES.md,
+    backgroundColor: 'white',
+    borderRadius: ICON_CONTAINER_SIZES.md / 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  locationIcon: {
+    width: 28,
+    height: 28,
+  },
+  menuIcon: {
+    width: 24,
+    height: 18,
   },
 });
 
