@@ -1,17 +1,14 @@
-import { logout } from '@react-native-kakao/user';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../apis/axios';
 import { Alert } from 'react-native';
 import useAuthStore from '../store/authStore';
 import { navigationRef } from './navigationRef';
 import { CommonActions } from '@react-navigation/native';
-
 // 토큰 저장 함수
 export const saveTokens = async (tokens) => {
   try {
     if(tokens.accessToken && tokens.refreshToken){
 
-      // Bearer 접두어가 있다면 제거
       const accessToken = tokens.accessToken.replace('Bearer ', '');
       const refreshToken = tokens.refreshToken.replace('Bearer ', '');
 
@@ -25,57 +22,107 @@ export const saveTokens = async (tokens) => {
   }
 };
 
-// 로그인 성공 처리 함수
-export const handleLoginSuccess = async (response, navigation, loginType = 'kakao') => {
+// 카카오 로그인 성공 처리 함수
+export const handleKakaoLoginSuccess = async (response, navigation) => {
   try {
+    console.log('카카오 로그인 응답:', response.data); // 서버 응답 확인
     const setIsLoggedIn = useAuthStore.getState().setIsLoggedIn;
+    // 1. 이미 다른 방식으로 가입된 계정 체크
+    if (response.status === 409 || response.data.code === '409') {
+      console.log('중복 계정 데이터:', response.data.data); // 중복 계정 정보 확인
+      Alert.alert(
+        '로그인 안내',
+        '이미 다른 방식으로 가입된 계정입니다.',
+        [{ text: '확인' }]
+      );
+      return false;
+    }
 
-    // 307 상태 코드 체크 (카카오 로그인의 경우)
-    if (response.status === 200 && response.data.code === '307' ) {
+    // 2. 신규 회원 체크
+    if (response.data.code === '307') {
       navigation.navigate('SignUp', {
-        email: response.data.data,
+        email: response.data.data.email,
         loginType: 'kakao',
         kakaoAccessToken: response.config.params.kakaoAccessToken,
       });
       return false;
     }
 
-    // 409 상태 코드 체크 (이메일 로그인 시도시 카카오 계정인 경우)
-    if (response.status === 409) {
+    // 3. 정상 로그인
+    if (response.status === 200 && response.data.data?.tokens) {
+      const tokens = {
+        accessToken: response.data.data.tokens.accessToken,
+        refreshToken: response.data.data.tokens.refreshToken,
+      };
+      
+      await saveTokens(tokens);
+      await AsyncStorage.setItem('loginType', 'kakao');
+      setIsLoggedIn(true);
+
+      navigationRef.current?.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'MainTab' }],
+        })
+      );
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('카카오 로그인 처리 실패:', error);
+    throw error;
+  }
+};
+
+// 애플 로그인 성공 처리 함수
+export const handleAppleLoginSuccess = async (response, navigation) => {
+  try {
+    const setIsLoggedIn = useAuthStore.getState().setIsLoggedIn;
+
+    // 1. 이미 다른 방식으로 가입된 계정 체크
+    if (response.status === 409 || response.data.code === '409') {
+      const provider = response.data.data?.provider || '다른';
       Alert.alert(
         '로그인 안내',
-        '해당 이메일은 카카오 계정으로 가입되어 있습니다.\n카카오 로그인을 이용해주세요.',
+        `이미 ${provider} 계정으로 가입된 이메일입니다.`,
         [{ text: '확인' }]
       );
       return false;
     }
-
-    if (response.status === 200 && response.data.data?.accessToken && response.data.data?.refreshToken) {
+    // 3. 정상 로그인
+    if (response.data.data?.tokens) {
       const tokens = {
-        accessToken: response.data.data.accessToken,
-        refreshToken: response.data.data.refreshToken,
+        accessToken: response.data.data.tokens.accessToken,
+        refreshToken: response.data.data.tokens.refreshToken,
       };
       
       await saveTokens(tokens);
-      await AsyncStorage.setItem('loginType', loginType);
+      await AsyncStorage.setItem('loginType', 'apple');
       setIsLoggedIn(true);
 
-      setTimeout(() => {
-        if (navigationRef.current) {
-          navigationRef.current.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'MainTab' }],
-            })
-          );
-        }
-      }, 0);
-
+      Alert.alert(
+        '환영합니다!',
+        '로그인이 완료되었습니다.',
+        [
+          {
+            text: '확인',
+            onPress: () => {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'MainTab' }],
+              });
+            }
+          }
+        ],
+        { cancelable: false }
+      );
       return true;
     }
+
     return false;
   } catch (error) {
-    console.error('로그인 처리 실패:', error);
+    console.error('애플 로그인 처리 실패:', error);
     throw error;
   }
 };
@@ -86,7 +133,7 @@ export const handleSignUpSuccess = async (signUpResponse, loginResponse, navigat
     const setIsLoggedIn = useAuthStore.getState().setIsLoggedIn;
 
     if (signUpResponse.status === 201 && loginResponse.status === 200) {
-      const tokens = loginResponse.data.data;
+      const tokens = loginResponse.data.data.tokens;
       await saveTokens(tokens);
       await AsyncStorage.setItem('loginType', 'email');
 
@@ -100,15 +147,10 @@ export const handleSignUpSuccess = async (signUpResponse, loginResponse, navigat
           {
             text: '확인',
             onPress: () => {
-              // navigationRef를 사용하여 MainTab으로 이동
-              if (navigationRef.current) {
-                navigationRef.current.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: 'MainTab' }],
-                  })
-                );
-              }
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'MainTab' }],
+              });
             }
           }
         ],
@@ -123,42 +165,120 @@ export const handleSignUpSuccess = async (signUpResponse, loginResponse, navigat
   }
 };
 
-export const applogout = async (storedLoginType) => {
+// 사용자 정보 조회
+export const userData = async () => {
   try {
     const accessToken = await AsyncStorage.getItem('accessToken');
-
-    // 1. 서버에 로그아웃 요청 보내기 (이메일 로그인 타입일 경우)
-    if (storedLoginType === 'email' && accessToken) {
-      try {
-        await api.post('/api/v1/auth/logout', null, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-      } catch (error) {
-        console.error('서버 로그아웃 요청 실패:', error);
-      }
-    }
-
-    // 2. 카카오 로그인 타입일 경우 카카오 SDK 로그아웃
-    if (storedLoginType === 'kakao') {
-      try {
-        await logout();
-      } catch (error) {
-        console.error('카카오 로그아웃 실패:', error);
-      }
-    }
-
-    // 3. 로컬 데이터 삭제
-    await AsyncStorage.multiRemove([
-      'accessToken',
-      'refreshToken',
-      'loginType'
-    ]);
-
-    return true;
+    const response = await api.get('/api/v1/auth/me', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    return response.data;
   } catch (error) {
-    console.error('로그아웃 실패:', error);
+    console.error('유저 데이터 조회 실패:', error);
+    throw error;
+  }
+};
+
+// 사용자 이름 수정
+export const updateUserName = async (newName) => {
+  try {
+    const accessToken = await AsyncStorage.getItem('accessToken');
+    const response = await api.put('/api/v1/auth/me/nickname', {
+      nickName: newName
+    }, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json;charset=UTF-8',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('이름 수정 실패:', error);
+    throw error;
+  }
+};
+
+// 사용자 이메일 수정
+export const updateUserEmail = async (newEmail) => {
+  try {
+    const accessToken = await AsyncStorage.getItem('accessToken');
+    const response = await api.put('/api/v1/auth/me/email', {
+      email: newEmail
+    }, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('이메일 수정 실패:', error);
+    throw error;
+  }
+};
+
+// 사용자 비밀번호 수정
+export const updateUserPassword = async (password) => {
+  try {
+    const accessToken = await AsyncStorage.getItem('accessToken');
+    const response = await api.put('/api/v1/auth/me/password', {
+      password: password
+    }, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('비밀번호 수정 실패:', error);
+    throw error;
+  }
+};
+
+// 로컬 로그인 성공 처리 함수
+export const handleLoginSuccess = async (response, navigation, loginType) => {
+  try {
+    const setIsLoggedIn = useAuthStore.getState().setIsLoggedIn;
+
+    // 1. 이미 다른 방식으로 가입된 계정 체크
+    if (response.status === 409 || response.data.code === '409') {
+      const provider = response.data.data?.provider || '다른';
+      Alert.alert(
+        '로그인 안내',
+        `이미 ${provider} 계정으로 가입된 이메일입니다.`,
+        [{ text: '확인' }]
+      );
+      return false;
+    }
+
+    // 2. 정상 로그인
+    if (response.data.data?.tokens) {
+      const tokens = {
+        accessToken: response.data.data.tokens.accessToken,
+        refreshToken: response.data.data.tokens.refreshToken,
+      };
+      
+      await saveTokens(tokens);
+      await AsyncStorage.setItem('loginType', loginType);
+      setIsLoggedIn(true);
+
+      // Stack Overflow 답변 기반으로 수정된 네비게이션 리셋
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            { name: 'MainTab' }
+          ],
+        })
+      );
+      
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('로그인 처리 실패:', error);
     throw error;
   }
 };
