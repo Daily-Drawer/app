@@ -1,76 +1,93 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, TextInput, Alert } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import api from '../apis/axios';
+import { handleLoginSuccess } from '../utils/auth';
 
 const CustomLogin = () => {
   const navigation = useNavigation();
-  const [email, setEmail] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+  const [error, setError] = useState('');
 
-  const handleEmailCheck = async () => {
-    if (!email) return;
+  const handleLogin = async () => {
+    if (!formData.email || !formData.password) {
+      setError('이메일과 비밀번호를 모두 입력해주세요.');
+      return;
+    }
 
     try {
-      // 이메일 체크 API 호출 시 loginType도 함께 전송
-      const response = await api.post(`/api/v1/auth/check-email`, {
-        userEmail: email,
-        loginType: 'email'  // 자체 이메일 로그인임을 명시
+      const response = await api.post('/api/v1/auth/login/local', {
+        userEmail: formData.email,
+        password: formData.password,
       });
 
-      if(response.status === 200){
-        // 이메일이 존재하고 로그인 타입이 일치하면 비밀번호 입력 화면으로 이동
-        navigation.navigate('PasswordLogin', { email });
+      // 이미 다른 방식으로 가입된 계정인 경우
+      if (response.status === 409 || response.data.code === '409') {
+        setError('이미 다른 방식으로 가입된 계정입니다.');
+        return;
       }
 
-    } catch (error) {
-      if (error.response?.status === 404) {
-        // 이메일이 존재하지 않는 경우
-        Alert.alert(
-          '회원가입 안내',
-          '가입된 이메일이 없습니다.\n회원가입을 하시겠습니까?',
-          [
-            {
-              text: '취소',
-              style: 'cancel',
-            },
-            {
-              text: '확인',
-              onPress: () => navigation.navigate('SignUp', {
-                email,
-                loginType: 'email',
-              }),
-            }
-          ]
-        );
-      } else if (error.response?.status === 409) {
-        // 이메일은 존재하지만 로그인 타입이 다른 경우
-        Alert.alert(
-          '로그인 안내',
-          '해당 이메일은 카카오 계정으로 가입되어 있습니다.\n카카오 로그인을 이용해주세요.',
-          [{ text: '확인' }]
-        );
-      } else {
-        console.error('이메일 확인 에러:', error);
-        Alert.alert('오류', '이메일 확인 중 문제가 발생했습니다.');
+      const loginResult = await handleLoginSuccess(response, navigation, 'email');
+      if (!loginResult) {
+        if (response.status === 404) {
+          setError('등록되지 않은 이메일입니다.');
+        } else if (response.status === 401 || response.status === 422) {
+          setError('이메일 또는 비밀번호가 일치하지 않습니다.');
+        } else {
+          setError('로그인에 실패했습니다. 다시 시도해주세요.');
+        }
       }
+    } catch (error) {
+      setError('로그인에 실패했습니다. 다시 시도해주세요.');
     }
+  };
+
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return email && emailRegex.test(email);
   };
 
   return (
     <View style={styles.container}>
+      <Text>이메일 로그인</Text>
       <TextInput
         style={styles.input}
         placeholder="이메일을 입력해주세요"
-        value={email}
-        onChangeText={setEmail}
+        value={formData.email}
+        onChangeText={(text) => {
+          setFormData({ ...formData, email: text });
+          setError('');
+        }}
         keyboardType="email-address"
         autoCapitalize="none"
       />
+      <TextInput
+        style={styles.input}
+        placeholder="비밀번호를 입력해주세요"
+        value={formData.password}
+        onChangeText={(text) => {
+          setFormData({ ...formData, password: text });
+          setError('');
+        }}
+        secureTextEntry
+        autoCapitalize="none"
+      />
+      {error !== '' && (
+        <Text style={styles.errorText}>{error}</Text>
+      )}
       <TouchableOpacity
-        style={styles.customButton}
-        onPress={handleEmailCheck}
+        style={[
+          styles.loginButton,
+          (!isValidEmail(formData.email) || !formData.password.trim()) &&
+          styles.loginButtonDisabled,
+        ]}
+        onPress={handleLogin}
+        disabled={!isValidEmail(formData.email) || !formData.password.trim()}
       >
-        <Text style={styles.buttonText}>이메일로 시작하기</Text>
+        <Text style={styles.loginButtonText}>로그인</Text>
       </TouchableOpacity>
     </View>
   );
@@ -79,6 +96,7 @@ const CustomLogin = () => {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+    marginTop: 40,
     maxWidth: 300,
     gap: 10,
   },
@@ -86,26 +104,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#DDDDDD',
-    borderRadius: 12,
+    borderRadius: 5,
     padding: 12,
     fontSize: 16,
+    width: '100%',
   },
-  customButton: {
-    backgroundColor: '#FFFFFF',
+  loginButton: {
+    backgroundColor: '#2B96ED',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: 5,
     paddingVertical: 11,
     paddingHorizontal: 14,
     width: '100%',
     borderWidth: 1,
     borderColor: '#DDDDDD',
   },
-  buttonText: {
-    color: '#000000',
+  loginButtonDisabled: {
+    backgroundColor: '#95A5A6',
+    opacity: 0.7,
+  },
+  loginButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '400',
+  },
+  errorText: {
+    color: '#FF0000',
+    fontSize: 14,
+    marginTop: 2,
+    marginLeft: 2,
   },
 });
 
