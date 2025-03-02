@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import api from '../../apis/axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { handleSignUpSuccess } from '../../utils/auth';
+import { spacing, wp, hp, fs } from '../../utils/responsive';
 
 const SignUp = () => {
   const route = useRoute();
@@ -33,6 +34,13 @@ const SignUp = () => {
     message: '',
     color: '',
   });
+
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [showVerificationCode, setShowVerificationCode] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [timerId, setTimerId] = useState(null);
 
   const validatePassword = (password) => {
     const hasUpperCase = /[A-Z]/.test(password);
@@ -80,15 +88,9 @@ const SignUp = () => {
       };
 
       if (loginType === 'kakao') {
-        console.log('카카오 회원가입 시작', {
-          signUpData,
-          kakaoToken: route.params?.kakaoAccessToken
-        });
-
         try {
           // 1. 카카오 회원가입
           const signUpResponse = await api.post('/api/v1/auth/signup/kakao', signUpData);
-          console.log('카카오 회원가입 응답:', signUpResponse.data);
 
           // 2. 카카오 로그인
           const loginResponse = await api.post(
@@ -100,17 +102,12 @@ const SignUp = () => {
               }
             }
           );
-          console.log('카카오 로그인 응답:', loginResponse.data);
 
           // 3. 회원가입 성공 처리
-          await handleSignUpSuccess(signUpResponse, loginResponse, navigation, formData.name);
-          console.log('회원가입 성공 처리 완료');
-
-          // 4. 메인탭으로 이동
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'MainTab' }],
-          });
+          const success = await handleSignUpSuccess(signUpResponse, loginResponse, navigation, formData.name);
+          if (!success) {
+            Alert.alert('오류', '회원가입 처리 중 문제가 발생했습니다.');
+          }
 
         } catch (error) {
           console.error('카카오 회원가입/로그인 에러:', error);
@@ -129,7 +126,6 @@ const SignUp = () => {
 
           // 1. 이메일 회원가입
           const signUpResponse = await api.post('/api/v1/auth/signup/local', emailSignUpData);
-          console.log('이메일 회원가입 응답:', signUpResponse.data);
 
           if (signUpResponse.data.code === '409') {
             Alert.alert('오류', '이미 가입된 회원입니다.');
@@ -141,22 +137,12 @@ const SignUp = () => {
             userEmail: formData.email,
             password: formData.password,
           });
-          console.log('이메일 로그인 응답:', loginResponse.data);
-
-          // 로그인 응답 검증 추가
-          if (loginResponse.status === 404 || loginResponse.data.errorCode === '404') {
-            Alert.alert('오류', '로그인에 실패했습니다.');
-            return;
-          }
 
           // 3. 회원가입 성공 처리
-          await handleSignUpSuccess(signUpResponse, loginResponse, navigation, formData.name);
-
-          // 4. 메인탭으로 이동
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'MainTab' }],
-          });
+          const success = await handleSignUpSuccess(signUpResponse, loginResponse, navigation, formData.name);
+          if (!success) {
+            Alert.alert('오류', '회원가입 처리 중 문제가 발생했습니다.');
+          }
 
         } catch (error) {
           console.error('이메일 회원가입 에러:', error);
@@ -199,6 +185,121 @@ const SignUp = () => {
     }
   };
 
+  // 타이머 시작 함수
+  const startTimer = () => {
+    setTimeLeft(600); // 10분 = 600초
+    const id = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(id);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    setTimerId(id);
+  };
+
+  // 타이머 초기화 함수
+  const resetTimer = () => {
+    if (timerId) {
+      clearInterval(timerId);
+      setTimerId(null);
+    }
+    setTimeLeft(0);
+  };
+
+  // 시간 형식 변환 함수
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (timerId) clearInterval(timerId);
+    };
+  }, [timerId]);
+
+  // 타이머가 0이 되면 인증 코드 입력 필드 초기화
+  useEffect(() => {
+    if (timeLeft === 0 && showVerificationCode) {
+      setShowVerificationCode(false);
+      setVerificationCode('');
+      Alert.alert('알림', '인증 시간이 만료되었습니다. 다시 시도해주세요.');
+    }
+  }, [timeLeft]);
+
+  // handleRequestVerification 수정
+  const handleRequestVerification = async () => {
+    if (!formData.email) {
+      Alert.alert('알림', '이메일을 입력해주세요.');
+      return;
+    }
+
+    try {
+      setIsVerifying(true);
+      // 타이머 초기화 후 시작
+      resetTimer();
+      setShowVerificationCode(true);
+      
+      // 서버에 이메일 인증 요청
+      await api.post(`/api/v1/auth/send-verification?userEmail=${formData.email}`);
+      Alert.alert('알림', '인증 코드가 이메일로 전송되었습니다.');
+      
+      // 새로운 타이머 시작
+      startTimer();
+    } catch (error) {
+      console.error('이메일 인증 요청 에러:', error);
+      Alert.alert('오류', '이메일 인증 요청에 실패했습니다.');
+      setShowVerificationCode(false);
+      resetTimer();
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // handleVerifyCode 수정
+  const handleVerifyCode = async () => {
+    if (!verificationCode) {
+      Alert.alert('알림', '인증 코드를 입력해주세요.');
+      return;
+    }
+
+    try {
+      setIsVerifying(true);
+      const response = await api.post('/api/v1/auth/verification-code', {
+        userEmail: formData.email,
+        code: verificationCode,
+      });
+      
+      if (response.status === 200) {
+        setIsEmailVerified(true);
+        setShowVerificationCode(false);
+        setVerificationCode('');
+        resetTimer(); // 인증 성공 시 타이머 초기화
+        Alert.alert('알림', '이메일 인증이 완료되었습니다.');
+      }
+    } catch (error) {
+      console.error('인증 코드 확인 에러:', error);
+      setIsEmailVerified(false);
+      
+      if (error.response?.status === 401) {
+        Alert.alert('오류', '인증 코드가 만료되었습니다. 다시 요청해주세요.');
+        setShowVerificationCode(false);
+        resetTimer(); // 인증 코드 만료 시 타이머 초기화
+      } else if (error.response?.status === 404) {
+        Alert.alert('오류', '잘못된 인증 코드입니다.');
+      } else {
+        Alert.alert('오류', '인증에 실패했습니다. 다시 시도해주세요.');
+      }
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -217,16 +318,65 @@ const SignUp = () => {
       <View style={styles.formContainer}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>이메일</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.email}
-            onChangeText={(text) => setFormData({...formData, email: text})}
-            placeholder="이메일을 입력해주세요"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={!initialEmail}
-          />
-          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+          {loginType === 'email' ? (
+            <>
+              <View style={styles.emailContainer}>
+                <TextInput
+                  style={[styles.input, styles.emailInput]}
+                  value={formData.email}
+                  onChangeText={(text) => {
+                    setFormData({...formData, email: text});
+                    setIsEmailVerified(false);
+                  }}
+                  placeholder="이메일을 입력해주세요"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  editable={!initialEmail}
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.verificationButton,
+                    isEmailVerified && styles.verifiedButton
+                  ]}
+                  onPress={handleRequestVerification}
+                  disabled={isEmailVerified || isVerifying}
+                >
+                  <Text style={styles.verificationButtonText}>
+                    {isEmailVerified ? '인증완료' : '인증하기'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {showVerificationCode && (
+                <View style={styles.verificationCodeContainer}>
+                  <TextInput
+                    style={[styles.input, styles.verifyCodeInput]}
+                    value={verificationCode}
+                    onChangeText={setVerificationCode}
+                    placeholder="인증 코드를 입력해주세요"
+                    keyboardType="number-pad"
+                    maxLength={6}
+                  />
+                  <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
+                  <TouchableOpacity
+                    style={[styles.verifyCodeButton, isVerifying && styles.verifyingButton]}
+                    onPress={handleVerifyCode}
+                    disabled={isVerifying}
+                  >
+                    <Text style={styles.verifyCodeButtonText}>
+                      {isVerifying ? '전송중' : '확인'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          ) : (
+            <TextInput
+              style={styles.input}
+              value={formData.email}
+              editable={false}
+              placeholder="카카오 계정 이메일"
+            />
+          )}
         </View>
 
         <View style={styles.inputGroup}>
@@ -237,10 +387,8 @@ const SignUp = () => {
             onChangeText={(text) => setFormData({...formData, name: text})}
             placeholder="이름을 입력해주세요"
           />
-          {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
         </View>
 
-        {/* 이메일 로그인일 때만 비밀번호 입력 필드 표시 */}
         {loginType === 'email' && (
           <>
             <View style={styles.inputGroup}>
@@ -250,7 +398,6 @@ const SignUp = () => {
                 value={formData.password}
                 onChangeText={(text) => {
                   setFormData({...formData, password: text});
-                  // 비밀번호가 변경되면 확인 메시지도 업데이트
                   if (formData.confirmPassword) {
                     handleConfirmPasswordChange(formData.confirmPassword);
                   }
@@ -282,7 +429,19 @@ const SignUp = () => {
           </>
         )}
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSignUp}>
+        <TouchableOpacity 
+          style={[
+            styles.submitButton,
+            ((loginType === 'email' && (!isEmailVerified || !formData.name || !formData.password || !passwordMatch.isMatching)) ||
+             (loginType === 'kakao' && !formData.name)) && 
+            styles.submitButtonDisabled
+          ]}
+          onPress={handleSignUp}
+          disabled={
+            (loginType === 'email' && (!isEmailVerified || !formData.name || !formData.password || !passwordMatch.isMatching)) ||
+            (loginType === 'kakao' && !formData.name)
+          }
+        >
           <Text style={styles.submitButtonText}>가입하기</Text>
         </TouchableOpacity>
       </View>
@@ -298,77 +457,133 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
   backButton: {
-    padding: 8,
+    padding: spacing.sm,
     position: 'absolute',
-    left: 16,
+    left: spacing.md,
     zIndex: 1,
   },
   backIcon: {
-    width: 24,
-    height: 24,
+    width: wp(6),
+    height: wp(6),
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: fs(18),
     fontWeight: '600',
   },
   formContainer: {
-    padding: 20,
+    padding: spacing.lg,
     flex: 1,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: hp(5),
   },
   label: {
-    fontSize: 16,
-    marginBottom: 8,
+    fontSize: fs(14),
+    marginBottom: spacing.xs,
     fontWeight: '500',
   },
   input: {
+    flex: 1,
     borderWidth: 1,
     borderColor: '#DDD',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    borderRadius: wp(2),
+    padding: spacing.md,
+    fontSize: fs(14),
+    minHeight: hp(6),
   },
   passwordGuide: {
-    fontSize: 12,
+    fontSize: fs(12),
     color: '#666',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   errorText: {
     color: 'red',
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: fs(12),
+    marginTop: spacing.xs,
   },
   submitButton: {
     backgroundColor: '#000',
-    padding: 15,
-    borderRadius: 8,
+    padding: spacing.md,
+    borderRadius: wp(2),
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: spacing.lg,
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '600',
   },
   matchMessage: {
-    fontSize: 12,
-    marginTop: 4,
-    opacity: 0.8,  // 연하게 표시
+    fontSize: fs(12),
+    marginTop: spacing.xs,
+    opacity: 0.8,
+  },
+  emailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  emailInput: {
+    flex: 1,
+  },
+  verificationButton: {
+    backgroundColor: '#2B96ED',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: wp(2),
+    width: wp(20),
+  },
+  verifiedButton: {
+    backgroundColor: '#27AE60',
+  },
+  verificationButtonText: {
+    color: '#FFFFFF',
+    fontSize: fs(12),
+    fontWeight: '600',
+  },
+  verificationCodeContainer: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  verifyCodeInput: {
+    flex: 1,
+    width: '70%',
+  },
+  verifyCodeButton: {
+    backgroundColor: '#2B96ED',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: wp(2),
+    width: wp(18),
+  },
+  verifyingButton: {
+    backgroundColor: '#95A5A6',
+  },
+  verifyCodeButtonText: {
+    color: '#FFFFFF',
+    fontSize: fs(12),
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#95A5A6',
+    opacity: 0.7,
+  },
+  timerText: {
+    color: '#FF6B6B',
+    fontSize: fs(12),
+    marginLeft: spacing.sm,
   },
 });
 
