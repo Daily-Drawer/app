@@ -1,19 +1,19 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import KakaoMapView from './KaKaoMapView';
 
 const HomeMap = () => {
   return (
-    <SafeAreaView style={styles.SafeView}>
-      <View>
-        <Text>홈</Text>
-      </View>
-    </SafeAreaView>
+    <View style={styles.container}>
+      <KakaoMapView />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  SafeView: {
+  container: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
 });
 

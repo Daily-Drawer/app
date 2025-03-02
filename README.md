@@ -1,79 +1,74 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 하루서랍 HaruDrawer
 
-# Getting Started
+HaruDrawer은 사용자의 일상적인 경험을 지도 위에 기록하고 공유할 수 있는 다이어리 앱입니다.
 
->**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
+## 주요 기능
 
-## Step 1: Start the Metro Server
+### 📍 위치 기반 다이어리
+- 방문한 위치를 지도에 기록
+- 카카오맵 API를 활용한 정확한 위치 정보 제공
+- 사용자의 현재 위치 기반 주변 다이어리 확인
 
-First, you will need to start **Metro**, the JavaScript _bundler_ that ships _with_ React Native.
+### 📝 다이어리 작성
+- 식사 경험에 대한 상세한 기록 가능
+- 사진 첨부 기능
+- 방문 날짜, 평가, 감정 등 다양한 정보 기록
 
-To start Metro, run the following command from the _root_ of your React Native project:
+### 🗺️ 지도 기반 UI
+- 직관적인 지도 인터페이스
+- 다이어리 위치를 한눈에 확인
+- 마커를 통한 간편한 다이어리 접근
 
-```bash
-# using npm
-npm start
+### 🔍 검색 및 필터링
+- 위치, 메뉴, 평가 등 다양한 조건으로 검색
+- 기간별 다이어리 필터링
+- 즐겨찾기 기능
 
-# OR using Yarn
-yarn start
-```
+### 소셜 로그인
+- 카카오 로그인
+- 애플 로그인
 
-## Step 2: Start your Application
+## 기술 스택
 
-Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your _Android_ or _iOS_ app:
+- React Native CLI
+- Zustand
+- React Native WebView
+- Kakao Maps API
+- Node.js Backend
+- MySQL Database
 
-### For Android
+## 시작하기
 
-```bash
-# using npm
-npm run android
+### 필수 조건
+- Node.js 18.0.0 이상
+- iOS 개발을 위한 Xcode
+- Android 개발을 위한 Android Studio
 
-# OR using Yarn
-yarn android
-```
+## Licenses
 
-### For iOS
+This project uses the following open source libraries:
 
-```bash
-# using npm
-npm run ios
+### Material Design Icons
+- Copyright (c) 2014-2024 Google LLC
+- Licensed under the Apache License, Version 2.0
+- https://github.com/google/material-design-icons
 
-# OR using Yarn
-yarn ios
-```
+### React Native & React
+- Copyright (c) Meta Platforms, Inc. and affiliates
+- Licensed under the MIT License
+- https://github.com/facebook/react-native
+- https://github.com/facebook/react
 
-If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
+### Kakao SDK
+- Copyright (c) Kakao Corp.
+- Licensed under the Apache License 2.0
+- https://github.com/kakao/kakao-sdk-android-reference
 
-This is one way to run your app — you can also run it directly from within Android Studio and Xcode respectively.
+### Other Libraries
+This project also includes several other open source libraries, all of which are licensed under the MIT License. For a complete list of libraries and their licenses, please see:
+- The LICENSE file in this repository
+- The "Licenses" page in the app
+- The `package.json` file's "licenses" section
 
-## Step 3: Modifying your App
-
-Now that you have successfully run the app, let's modify it.
-
-1. Open `App.tsx` in your text editor of choice and edit some lines.
-2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
-
-   For **iOS**: Hit <kbd>Cmd ⌘</kbd> + <kbd>R</kbd> in your iOS Simulator to reload the app and see your changes!
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
