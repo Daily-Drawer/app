@@ -124,7 +124,14 @@ limitations under the License.`
       license: 'MIT License',
       url: 'https://github.com/invertase/react-native-apple-authentication',
       licenseText: 'MIT License'
-    }
+    },
+    {
+      name: 'React Native Splash Screen',
+      copyright: 'Copyright (c) 2020-present Evan Bacon',
+      license: 'MIT License',
+      url: 'https://github.com/crazycodeboy/react-native-splash-screen',
+      licenseText: 'MIT License',
+    },
   ];
 
   return (
