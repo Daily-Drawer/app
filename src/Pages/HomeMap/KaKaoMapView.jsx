@@ -9,12 +9,13 @@ import { ICON_CONTAINER_SIZES } from '../../utils/iconSize';
 import PermissionUtil from '../../utils/PermissionUtil';
 import Geolocation from '@react-native-community/geolocation';
 
+const isIos = Platform.OS === 'ios';
+
 const KaKaoMapView = () => {
   const webViewRef = useRef(null);
   const watchIdRef = useRef(null);
   const navigation = useNavigation();
   const { diaries, fetchDiaries } = useDiaryStore();
-  const isIos = Platform.OS === 'ios';
   const [isListVisible, setIsListVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [isMapInitialized, setIsMapInitialized] = useState(false);
@@ -23,7 +24,7 @@ const KaKaoMapView = () => {
   // 마커 이미지 URI 가져오기
   const getMarkerImageUri = (imagePath) => {
     const resolvedImage = Image.resolveAssetSource(imagePath);
-    if (Platform.OS === 'ios') {
+    if (isIos) {
       return resolvedImage.uri.replace('file://', '');
     }
     return resolvedImage.uri;
