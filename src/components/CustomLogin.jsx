@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, TextInput } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, TextInput, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import api from '../apis/axios';
 import { handleLoginSuccess } from '../utils/auth';
-
+import { fs, spacing } from '../utils/responsive';
 const CustomLogin = () => {
   const navigation = useNavigation();
   const [formData, setFormData] = useState({
@@ -51,8 +51,7 @@ const CustomLogin = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text>이메일 로그인</Text>
+    <View style={styles.inputContainer}>
       <TextInput
         style={styles.input}
         placeholder="이메일을 입력해주세요"
@@ -94,30 +93,29 @@ const CustomLogin = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  inputContainer: {
     width: '100%',
-    marginTop: 40,
-    maxWidth: 300,
-    gap: 10,
+    gap: spacing.sm,
+    alignItems: 'center',
   },
   input: {
+    width: '100%',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#DDDDDD',
     borderRadius: 5,
-    padding: 12,
-    fontSize: 16,
-    width: '100%',
+    padding: spacing.sm,
+    fontSize: fs(16),
   },
   loginButton: {
+    width: '100%',
     backgroundColor: '#2B96ED',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 5,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    width: '100%',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: '#DDDDDD',
   },
@@ -127,14 +125,14 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '400',
   },
   errorText: {
     color: '#FF0000',
-    fontSize: 14,
+    fontSize: fs(14),
     marginTop: 2,
-    marginLeft: 2,
+    alignSelf: 'flex-start',
   },
 });
 
