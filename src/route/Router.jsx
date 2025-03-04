@@ -62,7 +62,7 @@ const MainTab = () => {
             e.preventDefault();
             const currentRoute = e.target.split('-')[0];
             navigation.navigate(currentRoute, {
-              screen: getInitialRouteName(currentRoute)
+              screen: getInitialRouteName(currentRoute),
             });
           },
         })}
