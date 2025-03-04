@@ -108,12 +108,9 @@ const DiaryDetail = () => {
           onRightPress={handleEdit}
         />
       </View>
-      <ScrollView style={styles.container} alwaysBounceVertical={false}>
+      <ScrollView style={styles.container}>
         {/* 이미지 슬라이더 */}
         <View style={styles.imageContainer}>
-          <View style={styles.titleView}>
-            <CustomTextTitle>{diary?.title}</CustomTextTitle>
-          </View>
           <View>
           {images.length > 0 ? (
             <>
@@ -151,7 +148,7 @@ const DiaryDetail = () => {
 
         {/* 콘텐츠 영역 */}
         <View style={styles.contentContainer}>
-          {/* 제목 */}
+          <CustomTextTitle>{diary?.title}</CustomTextTitle>
           <View>
           <Text style={styles.visitDate}>{diary?.visitDate}</Text>
           </View>
@@ -194,9 +191,6 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: 'relative',
     paddingBottom: 0,
-  },
-  titleView: {
-    padding: 16,
   },
   imageSlider: {
     width: width,
